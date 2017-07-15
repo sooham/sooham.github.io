@@ -1,1 +1,7 @@
 *.pyc
+Makefile
+content/
+develop_server.sh
+pelicanconf.py
+publishconf.py
+fabfile.py
