@@ -7,3 +7,4 @@
 | Start localhost:4000 server |           **hexo server [--port=port]**          |
 |        Publish draft        |        **hexo publish [layout] filename**        |
 |            Clean            |                  **hexo clean**                  |
+|        Deploy to Github     |                 **hexo deploy**                  |
