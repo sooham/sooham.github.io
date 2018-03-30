@@ -1,2 +1,3 @@
 [submodule "polk"]
 	path = themes/polk
+	url = https://github.com/sooham/polk.git
