@@ -1,3 +1,6 @@
 [submodule "polk"]
 	path = themes/polk
 	url = https://github.com/sooham/polk.git
+[submodule "themes/polk"]
+	path = themes/polk
+	url = https://github.com/sooham/polk.git
