@@ -1,4 +1,18 @@
-# Sooham Rafiz's Static Blog
+# Computer Stuff and Other Stuff
+## Sooham's Blog
+
+**_config.yml**
+Hexo blog settings
+
+**Scaffolds**
+YML templates used by default. Edit these to edit generated templates.
+
+**Source Folder**
+Source folder. This is where you put your site’s content. Hexo ignores hidden files and files or folders whose names are prefixed with _ (underscore) - except the \_posts folder. Renderable files (e.g. Markdown, HTML) will be processed and put into the public folder, while other files will simply be copied.
+
+**hexo-renderer-kramed**
+The npm dependency hexo-renderer-kramed has replaced hexo-renderer-marked.
+
 
 
 |     Create new blog post    |            **hexo new [layout] title**           |
