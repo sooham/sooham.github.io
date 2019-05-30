@@ -40,8 +40,9 @@ render_drafts: true
 post_asset_folder: true
 relative_link: false
 future: true
+
 highlight:
-  enable: true
+  enable: false
   line_number: true
   auto_detect: false
   tab_replace:
@@ -79,6 +80,12 @@ theme: polk
 
 mathjax:
   enable: true
+
+#prism_plugin:
+#  mode: 'realtime'    # realtime/preprocess
+#  theme: 'dark'
+#  line_number: true    # default false
+#  #custom_css: 'path/to/your/custom.css'     # optional
 
 # Deployment
 ## Docs: https://hexo.io/docs/deployment.html
