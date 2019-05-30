@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html>
+  <!DOCTYPE html>
+<!--<html lang="en">-->
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=Edge,chrome=1">
+  
+  <title>Counting efficiently at scale using HyperLogLog - Computer Stuff and Other Stuff</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
+  
+  <meta name="keywords" content="HyperLogLog">
+  
+  
+    <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico?v=1.02">
+  
+  
+    <link rel="alternate" href="/atom.xml " title="Computer Stuff and Other Stuff" type="application/atom+xml">
+  
+
+  <script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+    menuSettings: {
+      zoom: "None"
+    },
+    showMathMenu: false,
+    jax: ["input/TeX","output/CommonHTML"],
+    extensions: ["tex2jax.js"],
+    TeX: {
+      extensions: ["AMSmath.js","AMSsymbols.js"],
+      equationNumbers: {
+        autoNumber: "AMS"
+      }
+    },
+    tex2jax: {
+      inlineMath: [["\\(", "\\)"]],
+      displayMath: [["\\[", "\\]"]]
+    }
+  });
+</script>
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js"></script>
+
+<!_-- highlight js-->
+<link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.15.8/styles/default.min.css">
+<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.15.8/highlight.min.js"></script>
+<script>hljs.initHighlightingOnLoad();</script>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+
+  <body>
+    <div class="container">
+      <header class="header">
+  <div class="blog-title">
+    <a href="/" class="logo">Computer Stuff and Other Stuff</a>
+    <div class="subtitle">By Sooham Rafiz</div>
+  </div>
+  <nav class="navbar">
+    <ul class="menu">
+      
+        <li class="menu-item">
+          <a href="/" class="menu-item-link">Home</a>
+        </li>
+      
+    </ul>
+  </nav>
+</header>
+<article class="post">
+  <div class="post-title">
+    <h1 class="article-title">Counting efficiently at scale using HyperLogLog</h1>
+  </div>
+   <div class="post-meta">
+    <span class="post-time">2019-05-28</span>
+  </div>
+  <div class="post-content">
+    <p>Counting <strong>exactly</strong> number of distinct elements from a stream at scale is intrinsically a linear problem. From a perspective of time taken, intuition tells us that we cannot skip any elements in the stream and be confident in the accuracy of our result. With regards to space required to solve the problem, a record of previously seen elements in the stream must be kept. For a stream of <script type="math/tex">n</script> distinct elements, the <strong>COUNT-DISTINCT</strong> algorithm requires <script type="math/tex">\Theta(n)</script> space.</p>
+<p>For services counting distincts in huge streams, such as the number of IP addresses visiting <a href="https://google.com/" target="_blank" rel="noopener">Google</a>, the number of unique views of a popular Reddit post, the memory-to-utility ratio would not justify using <strong>COUNT-DISTINCT</strong>, instead developers can use an approximation algorithm of <strong>COUNT-DISTINCT</strong> to produce a estimate close enough at a fraction of the space needed. <strong>HyperLogLog</strong> is one such approximation algorithm.</p>
+<h3 id="Implementation-of-COUNT-DISTINCT"><a href="#Implementation-of-COUNT-DISTINCT" class="headerlink" title="Implementation of COUNT-DISTINCT"></a>Implementation of COUNT-DISTINCT</h3><pre><code class="lang-cpp">#include &lt;map&gt;
+
+using namespace std;
+
+template &lt;class stream_type&gt;
+class COUNT_DISTINCT {
+    std::map&lt;stream_type, int&gt; seen;
+
+    public:
+        COUNT_DISTINCT();
+        void add(stream_type v);
+        size_t count();
+}
+
+template&lt;class stream_type&gt;
+COUNT_DISTINCT&lt;stream_type&gt;::COUNT_DISTINCT() {}
+
+template&lt;class stream_type&gt;
+void COUNT_DISTINCT&lt;stream_type&gt;::add(stream_type v) {
+    seen[v] = 1;
+}
+
+template&lt;class stream_type&gt;
+void COUNT_DISTINCT&lt;stream_type&gt;::count() {
+    return seen.size();
+}
+</code></pre>
+<h2 id="What-is-HyperLogLog-Exactly"><a href="#What-is-HyperLogLog-Exactly" class="headerlink" title="What is HyperLogLog Exactly?"></a>What is HyperLogLog Exactly?</h2><p>HyperLogLog is many things, from the perspective of computer science, it is a:</p>
+<ul>
+<li><strong>Streaming algorithm</strong> - an algorithm operating on read-once-only stream of data.</li>
+<li><strong>Approximation algorithm</strong> - an algorithm which can be mathematically proven to produce a result within a bound of the optimal result.</li>
+<li><strong>A probabilistic algorithm</strong> - an algorithm not guaranteed to be correct for every input, in fact you’ll see that HyperLogLog can be passed a stream by an adversary to make it fail by a large margin. However, if the input stream is randomly distributed has a sufficiently large <script type="math/tex">n</script>, as in most applications at scale, HyperLogLog will behave well.</li>
+<li><strong>A data structure</strong>: While HyperLogLog was described as a cardinality estimation algorithm by Flajolet et. al. We can segment the logic of this algorithm into methods to create a data structure consuming elements in a stream and providing an estimation.</li>
+</ul>
+<p>The main principle behind HyperLogLog is understanding the effect of random hashing a stream of values. Given a hash function <script type="math/tex">hash(x): D \rightarrow \{0,1\}^L</script> mapping the stream domain to a string of <script type="math/tex">L</script> bits uniformly, with every bit being a independent and identically distributed random variable. Hashing to random will create a new probability distribution which is indicative of the distinct count.</p>
+<p>If we <script type="math/tex">hash</script> a stream of random integers between <script type="math/tex">[0, 10^9]</script>, it is expected that 50% of hashed elements in the stream start with bit pattern <script type="math/tex">1</script>, 25% of the hashed elements start with <script type="math/tex">01</script>, 12.5% start with <script type="math/tex">001</script>, 6.25% start with <script type="math/tex">0001</script>. Intuitively it makes sense that seeing the bit pattern <script type="math/tex">0^\rho1</script> means <script type="math/tex">n</script> is at least <script type="math/tex">2^{\rho}</script>.</p>
+<p>A simple version of HyperLogLog keeps track of the random variable <script type="math/tex">r = \max({msb(hash(x_i)) : \forall i \in S})</script> over the stream <script type="math/tex">S</script>, where <script type="math/tex">msb</script> is the index of the first non-zero most significant bit, i.e <script type="math/tex">msb(0001_2) = 3</script>, <script type="math/tex">msb(1000_2) = 0</script>, <script type="math/tex">msb(0100_2) = 1</script> and <script type="math/tex">msb(0000_2) = 4</script> over 4-bit inputs. The value of <script type="math/tex">2^{r}</script> is returned, with <script type="math/tex">r = -\infty</script> when the stream is empty.</p>
+<h2 id="A-simple-but-naive-version-of-HyperLogLog"><a href="#A-simple-but-naive-version-of-HyperLogLog" class="headerlink" title="A simple, but naive version of HyperLogLog"></a>A simple, but naive version of HyperLogLog</h2><pre><code class="lang-cpp">#include &lt;cmath&gt;
+#include &lt;functional&gt;
+
+unsigned int msb_index(size_t i) {
+    // return the index of the left most significant bit of input i
+    if (i == 0) return sizeof(size_t) * 8;
+    unsigned int n = 0;
+    size_t nth_msb_bitmask = ((size_t) 1) &lt;&lt; (sizeof(size_t) * 8 - 1);
+    while((i &amp; nth_msb_bitmask) == 0 &amp;&amp; n &lt; sizeof(size_t) * 8) {
+        n++;
+        nth_msb_bitmask = ((size_t) 1) &lt;&lt; (sizeof(size_t) * 8 - 1 - n);
+    }
+    return n;
+}
+
+
+template &lt;class stream_type&gt;
+class HyperLogLog {
+    size_t r;
+    std::hash&lt;stream_type&gt; hash_func;
+
+    public:
+    HyperLogLog();
+    void add(stream_type v);
+    double estimate();
+
+};
+
+template &lt;class stream_type&gt;
+HyperLogLog&lt;stream_type&gt;::HyperLogLog(), hash_func()  {
+    r = 0;
+}
+
+template &lt;class stream_type&gt;
+void HyperLogLog&lt;stream_type&gt;::add(stream_type v) {
+    size_t hv = hash_func(v);
+    r = std::max(r, msb_index(hv));
+}
+
+template &lt;class stream_type&gt;
+double HyperLogLog&lt;stream_type&gt;::estimate() {
+    return pow(2, r);
+}
+</code></pre>
+<p>The above algorithm is almost identical to a precursor of the HyperLogLog algorithm, the <a href="https://en.wikipedia.org/wiki/Flajolet%E2%80%93Martin_algorithm" target="_blank" rel="noopener">Flajolet–Martin algorithm</a>. The above algorithm has a flaw in that it has large variance, if for example the stream contains an element <script type="math/tex">x</script> for which <script type="math/tex">hash(x) = 0</script>, then regardless of the number of distinct elements, the result would be <script type="math/tex">2^L</script>. </p>
+<p>To reduce the flaw, we can partition a stream <script type="math/tex">S</script> into <script type="math/tex">M</script> substreams, where <script type="math/tex">M < S</script>, compute <script type="math/tex">r_i</script>  for each substream <script type="math/tex">i \in \{1, \ldots, M\}</script> and average the estimates given by each stream. A simple method to partition the stream is by sorting hashes of elements by their first <script type="math/tex">b</script> bits. </p>
+<p>Implementing this gets closer to HyperLogLog.</p>
+<h2 id="Implementation-of-HyperLogLog"><a href="#Implementation-of-HyperLogLog" class="headerlink" title="Implementation of HyperLogLog"></a>Implementation of HyperLogLog</h2><pre><code class="lang-cpp">#include &lt;iostream&gt;
+#include &lt;string&gt;
+#include &lt;vector&gt;
+#include &lt;cmath&gt;
+#include &lt;functional&gt;
+#include &lt;algorithm&gt;
+
+unsigned int msb_index(size_t i) {
+    // return the index of the left most significant bit of input i
+    if (i == 0) return sizeof(size_t) * 8;
+    unsigned int n = 0;
+    size_t nth_msb_bitmask = ((size_t) 1) &lt;&lt; (sizeof(size_t) * 8 - 1);
+    while((i &amp; nth_msb_bitmask) == 0 &amp;&amp; n &lt; sizeof(size_t) * 8) {
+        n++;
+        nth_msb_bitmask = ((size_t) 1) &lt;&lt; (sizeof(size_t) * 8 - 1 - n);
+    }
+    return n;
+}
+
+
+template &lt;class stream_type&gt;
+class HyperLogLog {
+    unsigned int b; // partition into 2^b substreams
+    unsigned int m; // m substreams
+    unsigned int* registers;
+    std::hash&lt;stream_type&gt; hash_func;
+
+    public:
+    HyperLogLog(int b);
+    ~HyperLogLog() {}
+
+    void add(stream_type v);
+    double estimate();
+
+};
+
+template &lt;class stream_type&gt;
+HyperLogLog&lt;stream_type&gt;::HyperLogLog(unsigned int b): b(b), hash_func()  {
+    m = 1 &lt;&lt; b; 
+    registers = new unsigned int[m]();
+}
+
+template &lt;class stream_type&gt;
+HyperLogLog&lt;stream_type&gt;::~HyperLogLog() {
+    delete[] registers;
+}
+
+template &lt;class stream_type&gt;
+void HyperLogLog&lt;stream_type&gt;::add(stream_type v) {
+    size_t hv = hash_func(v);
+    size_t j = hv &gt;&gt; (sizeof(size_t) * 8 - b);
+    size_t w = hv &amp; ((1 &lt;&lt; sizeof(size_t) * 8 - b) - 1);
+    registers[j] = std::max(registers[j], msb_index(w));
+}
+
+template &lt;class stream_type&gt;
+double HyperLogLog&lt;stream_type&gt;::estimate() {
+    // return the harmonic mean (reciprocals of the mean of the reciprocals) of 2^{register[i]}
+    double harmonic_mean = 0;
+    for (int i=0; i &lt; m; i++) {
+        harmonic_mean += pow(2.0, -registers[i]);
+    }
+    harmonic_mean = pow(harmonic_mean, -1.0) * m;
+    // harmonic mean computed
+    return harmonic_mean * m;
+}
+</code></pre>
+<p>The intuition behind this algorithm, as written by Flajolet et. al is: </p>
+<blockquote>
+<p>Let <script type="math/tex">n</script> be the unknown cardinality of stream <script type="math/tex">S</script>. Each substream will comprise approximately <script type="math/tex">n/m</script> elements. Then, its max-parameter should be close to <script type="math/tex">\log_2(n/m)</script>. The harmonic mean <script type="math/tex">k</script>  of the quantities <script type="math/tex">2^{Max}</script> is then likely to be of the order of <script type="math/tex">n/m</script>. Thus, <script type="math/tex">mk</script> should be of the order of <script type="math/tex">n</script>. </p>
+</blockquote>
+<p>In the above code for <strong>HyperLogLog::estimate</strong> the final result is a biased estimator, hence the authors multiply the estimate with a constant to remove the bias. The reasoning behind the value chosen is justified by complex math, hence why I have decided not to include the constant in this code.</p>
+<h2 id="Why-does-HyperLogLog-work"><a href="#Why-does-HyperLogLog-work" class="headerlink" title="Why does HyperLogLog work?"></a>Why does HyperLogLog work?</h2><p>A thorough analysis of HyperLogLog is a complicated issue, requiring good knowledge of Complex analysis and statistical techniques such as Depossionisation. Mathematically adept readers <a href="http://algo.inria.fr/flajolet/Publications/FlFuGaMe07.pdf" target="_blank" rel="noopener">can read the paper by Flajolet et. al</a>. I may revisit the topic when I have gained mathematical maturity.</p>
+<h2 id="Where-is-HyperLogLog-used"><a href="#Where-is-HyperLogLog-used" class="headerlink" title="Where is HyperLogLog used?"></a>Where is HyperLogLog used?</h2><ul>
+<li>In databases such as Redis, Presto and other SQL query engines.</li>
+<li>Used by Reddit to provide a real-time estimate of reddit post counts [<a href="https://redditblog.com/2017/05/24/view-counting-at-reddit/" target="_blank" rel="noopener">Link</a>].</li>
+</ul>
+<h2 id="References"><a href="#References" class="headerlink" title="References"></a>References</h2><p><a href="https://code.fb.com/data-infrastructure/hyperloglog/" target="_blank" rel="noopener">https://code.fb.com/data-infrastructure/hyperloglog/</a></p>
+<p><a href="https://storage.googleapis.com/pub-tools-public-publication-data/pdf/40671.pdf" target="_blank" rel="noopener">https://storage.googleapis.com/pub-tools-public-publication-data/pdf/40671.pdf</a></p>
+<p><a href="http://algo.inria.fr/flajolet/Publications/FlFuGaMe07.pdf" target="_blank" rel="noopener">http://algo.inria.fr/flajolet/Publications/FlFuGaMe07.pdf</a></p>
+<p><a href="https://redditblog.com/2017/05/24/view-counting-at-reddit/" target="_blank" rel="noopener">https://redditblog.com/2017/05/24/view-counting-at-reddit/</a></p>
+
+  </div>
+  <div class="post-footer">
+    
+      <ul class="post-tag-list"><li class="post-tag-list-item"><a class="post-tag-list-link" href="/tags/HyperLogLog/">HyperLogLog</a></li></ul>
+    
+
+    <a href="#top" class="top">Back to Top</a>
+  </div>
+</article>
+<footer>
+  &copy; 2019
+  <span class="author">
+    Sooham Rafiz
+  </span>
+</footer>
+    </div>
+  </body>
+</html>
