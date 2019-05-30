@@ -90,7 +90,10 @@ mathjax:
 # Deployment
 ## Docs: https://hexo.io/docs/deployment.html
 deploy:
-  type:
+  type: git
+  repo: https://github.com/sooham/sooham.github.io
+  branch: master
+  message: deploy changes to master {{ now('YYYY-MM-DD') }}
 
 include:
 exculde:
