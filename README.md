@@ -1,6 +1,13 @@
 # Computer Stuff and Other Stuff
 ## Sooham's Blog
 
+** Setup ** 
+```bash
+npm install
+npm update
+npm audit fix --force
+npm outdated # should be empty
+```
 **_config.yml**
 Hexo blog settings
 
@@ -13,7 +20,8 @@ Source folder. This is where you put your site’s content. Hexo ignores hidden 
 **hexo-renderer-kramed**
 The npm dependency hexo-renderer-kramed has replaced hexo-renderer-marked.
 
-
+**commands**
+`hexo` can be accessed by `npm run hexo -- <flags>`
 
 |     Create new blog post    |            **hexo new [layout] title**           |
 |:---------------------------:|:------------------------------------------------:|
@@ -22,3 +30,5 @@ The npm dependency hexo-renderer-kramed has replaced hexo-renderer-marked.
 |        Publish draft        |        **hexo publish [layout] filename**        |
 |            Clean            |                  **hexo clean**                  |
 |        Deploy to Github     |                 **hexo deploy**                  |
+
+
