@@ -1,12 +1,13 @@
 # Computer Stuff and Other Stuff
 ## Sooham's Blog
 
-** Setup ** 
+**Setup** 
 ```bash
 npm install
 npm update
 npm audit fix --force
 npm outdated # should be empty
+git clone https://github.com/sooham/polk themes/polk
 ```
 **_config.yml**
 Hexo blog settings
