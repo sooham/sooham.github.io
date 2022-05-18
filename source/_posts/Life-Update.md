@@ -4,6 +4,10 @@ mathjax: true
 comments: true
 date: 2022-05-17 19:55:34
 tags:
+categories:
+- General 
+tags: 
+- Life
 ---
 
 It has been a while since I have last blogged and a lot has happened in the time that has passed by - COVID, lockdowns, fleeting love and new jobs. In retrospect, my drive for consistent writing back in 2019 was temporary, yet my curiousity for software and engineering always burns bright.
