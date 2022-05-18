@@ -3,7 +3,6 @@ title: Life update
 mathjax: true
 comments: true
 date: 2022-05-17 19:55:34
-tags:
 categories:
 - General 
 tags: 
