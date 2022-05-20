@@ -9,6 +9,11 @@ npm audit fix --force
 npm outdated # should be empty
 git clone https://github.com/sooham/polk themes/polk
 ```
+
+**Hexo information**
+https://hexo.io/docs/
+
+
 **_config.yml**
 Hexo blog settings
 
