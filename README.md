@@ -7,6 +7,7 @@ npm install
 npm update
 npm audit fix --force
 npm outdated # should be empty
+ npm install --save-dev npm-check-updates # check for updates and save
 git clone https://github.com/sooham/polk themes/polk
 ```
 

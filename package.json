@@ -20,5 +20,8 @@
   "scripts": {
     "server": "hexo server",
     "hexo": "hexo"
+  },
+  "devDependencies": {
+    "npm-check-updates": "^17.1.3"
   }
 }
