@@ -4,7 +4,7 @@
 all: build
 
 # Install dependencies and theme if needed
-install:
+install: 
 	@echo "Installing npm dependencies..."
 	npm ci
 	@echo "Ensuring theme is present..."
@@ -21,15 +21,13 @@ clean:
 	npm run hexo clean
 
 # Generate static site for production
-generate: install
+generate: clean install
 	@echo "Generating static site..."
 	npm run hexo generate -- $(ARGS)
 
-# Alias for production build
-build: clean generate
 
 # Deploy to GitHub Pages (or configured deploy target)
-deploy: build
+deploy: generate
 	@echo "Deploying site..."
 	npm run hexo deploy
 
