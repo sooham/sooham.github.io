@@ -11,6 +11,18 @@ author: Sooham Rafiz
 language: en
 timezone: America/New_York
 
+# Image settings
+post_asset_folder: true
+marked:
+  prependRoot: true
+  postAsset: true
+  mangle: true
+  sanitize: true
+  dompurify: true
+  external_link: 
+    enable: true
+  descriptionLists: falsee
+
 # URL
 ## If your site is put in a subdirectory, set url as 'http://yoursite.com/child' and root as '/child/'
 url: http://sooham.github.io
@@ -37,7 +49,6 @@ titlecase: false # Transform title into titlecase
 external_link: true # Open external links in new tab
 filename_case: 0
 render_drafts: true
-post_asset_folder: true
 relative_link: false
 future: true
 
