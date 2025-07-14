@@ -25,6 +25,9 @@ generate: clean install
 	@echo "Generating static site..."
 	npm run hexo generate -- $(ARGS)
 
+# Shorthand for generate
+gen: generate
+
 
 # Deploy to GitHub Pages (or configured deploy target)
 deploy: generate
