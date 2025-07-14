@@ -5,8 +5,15 @@
 # Site
 title: Computer Stuff and Other Stuff
 subtitle: By Sooham Rafiz
-description: An exploration into the jungle of software development.
+description: An exploration into algorithms. 
 keywords:
+  - algorithms
+  - data structures
+  - computer science
+  - programming
+  - software development
+  - software engineering
+  - software architecture
 author: Sooham Rafiz
 language: en
 timezone: America/New_York
@@ -18,7 +25,7 @@ marked:
   postAsset: true
   mangle: true
   sanitize: true
-  dompurify: true
+  dompurify: false
   external_link: 
     enable: true
   descriptionLists: falsee
@@ -29,6 +36,9 @@ url: http://sooham.github.io
 root: /
 permalink: :year/:month/:day/:title/
 permalink_defaults:
+pretty_urls:
+  trailing_index: false
+  trailing_html: false
 
 # Directory
 source_dir: source
@@ -38,15 +48,22 @@ archive_dir: archives
 category_dir: categories
 code_dir: downloads/code
 i18n_dir: :lang
+
+# skip_render:
 # paths that will be copied to public raw, without being rendered
 # you can use glob exprs for path matching i.e mypage/**/*
-skip_render:
+skip_render: 
+  - "source/**/*.js" # Javascript files will be copied to public folder
 
 # Writing
 new_post_name: :title.md # File name of new posts
 default_layout: post
 titlecase: false # Transform title into titlecase
-external_link: true # Open external links in new tab
+external_link: 
+  enable: true # Open external links in new tab
+  field: site
+  exclude: ['www.sooham.github.io']
+
 filename_case: 0
 render_drafts: true
 relative_link: false
