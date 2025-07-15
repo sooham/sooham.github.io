@@ -767,12 +767,15 @@ class LetterBoxed {
                 return;
             }
             if (e.key === 'Enter') {
+                if (e.ctrlKey || e.metaKey || e.altKey) return;
                 e.preventDefault();
                 this.submitWord();
             } else if (e.key === 'Backspace') {
+                if (e.ctrlKey || e.metaKey || e.altKey) return;
                 e.preventDefault();
                 this.deleteLastLetter();
             } else if (e.key.length === 1 && /[a-zA-Z]/.test(e.key)) {
+                if (e.ctrlKey || e.metaKey || e.altKey) return;
                 // Check if the letter is in the current game
                 const upper = e.key.toUpperCase();
                 const allLetters = [
