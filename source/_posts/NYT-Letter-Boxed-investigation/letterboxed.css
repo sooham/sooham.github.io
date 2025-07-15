@@ -25,11 +25,35 @@
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
     font-size: 24px;
     font-weight: 700;
-    padding-bottom: 20px;
-    height: 30px;
+    padding-top: 20px;
+    padding-bottom: 4px;
+    width: 66%;
     letter-spacing: 0.5px;
     text-align: center;
-    box-sizing: border-box;
+    background-color: var(--lb-pink);
+    border-bottom: 3px solid var(--lb-black);
+    margin-left: auto;
+    margin-right: auto;
+    display: block;
+}
+
+.used-words {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    font-size: 18px;
+    font-weight: 700;
+    padding-top: 10px;
+    padding-bottom: 10px;
+    width: 80%;
+    letter-spacing: 0.5px;
+    text-align: center;
+    background-color: var(--lb-pink);
+    margin-left: auto;
+    margin-right: auto;
+    display: block;
+}
+
+.words-container {
+    width: 100%;
     background-color: var(--lb-pink);
 }
 
@@ -70,15 +94,15 @@
 }
 
 .letter-circle.submitted {
-    background-color: var(--lb-black);
+    background-color: var(--lb-white);
     border: 3px solid var(--lb-pink);
     /* No need to repeat transition, inherited from .letter-circle */
 }
 
-.letter-circle:hover {
+/* .letter-circle:hover {
     background-color: var(--lb-pink);
     border: 3px solid var(--lb-pink);
-}
+} */
 
 .letter-text {
     position: absolute;
@@ -103,7 +127,9 @@
     gap: 10px;
     align-items: center;
     justify-content: center;
-    margin-top: 20px;
+    padding-top: 20px;
+    padding-bottom: 20px;
+    background-color: var(--lb-pink);
 }
 
 .game-button {
@@ -113,7 +139,7 @@
     color: var(--lb-black);
     padding: 8px 16px;
     border-radius: 15px;
-    border: 2px solid var(--lb-black);
+    border: 1px solid var(--lb-black);
     cursor: pointer;
     background: var(--lb-pink);
     transition: background-color 0.2s;

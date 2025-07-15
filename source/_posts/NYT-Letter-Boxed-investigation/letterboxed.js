@@ -175,6 +175,17 @@ class LetterBoxed {
         currentWordDisplay.className = 'current-word';
         this.currentWordDisplay = currentWordDisplay;
 
+        // Create used words display
+        const usedWordsDisplay = document.createElement('div');
+        usedWordsDisplay.className = 'used-words';
+        this.usedWordsDisplay = usedWordsDisplay;
+
+        // create a container for both current and used words
+        const wordsContainer = document.createElement('div');
+        wordsContainer.className = 'words-container';
+        wordsContainer.appendChild(currentWordDisplay);
+        wordsContainer.appendChild(usedWordsDisplay);
+
         // Create game board
         const gameBoard = document.createElement('div');
         gameBoard.className = 'game-board';
@@ -232,7 +243,7 @@ class LetterBoxed {
         gameBoard.appendChild(this.linesContainer);
 
 
-        this.container.appendChild(currentWordDisplay);
+        this.container.appendChild(wordsContainer);
         this.container.appendChild(gameBoard);
         this.container.appendChild(controls);
 
@@ -366,13 +377,15 @@ class LetterBoxed {
         this.visitedLetters = currentState.visitedLetters;
 
         // Update display
-        this.currentWordDisplay.textContent = [...this.usedWords, this.currentWord].join(', ');
+        this.currentWordDisplay.textContent = this.currentWord;
+        this.usedWordsDisplay.textContent = this.usedWords.join(', ');
 
         // Restore visited letter styles
         this.visitedLetters.forEach(letter => {
             const letterElement = this.letterElements.get(letter);
             if (letterElement) {
                 letterElement.element.classList.add('visited');
+                letterElement.letterText.classList.add('visited');
             }
         });
 
@@ -509,7 +522,7 @@ class LetterBoxed {
         }
 
         this.currentWord += letter;
-        this.currentWordDisplay.textContent = [...this.usedWords, this.currentWord].join(', ');
+        this.currentWordDisplay.textContent = this.currentWord;
 
         this.drawConnections();
     }
@@ -536,32 +549,42 @@ class LetterBoxed {
 
         this.linesContainer.innerHTML = '';
 
-        // reset all the letter elements to not visited or submitted
-        // this.letterElements.forEach(letterElement => {
-        //     letterElement.element.classList.remove('visited');
-        //     letterElement.element.classList.remove('submitted');
-        // });
-
         // draw the connections for the used words
         for (let i = 0; i < this.usedWords.length; i++) {
             const word = this.usedWords[i];
             for (let j = 0; j < word.length - 1; j++) {
-                this.letterElements.get(word[j]).element.classList.add('submitted');
+                const letterObj = this.letterElements.get(word[j]);
+                if (letterObj) {
+                    letterObj.element.classList.add('submitted');
+                    letterObj.letterText.classList.add('submitted');
+                }
                 this.drawConnectionLine(word[j], word[j + 1], true);
             }
         }
 
         // mark the last letter of the last used word as submitted
         if (this.usedWords.length > 0) {
-            this.letterElements.get(
-                this.usedWords[this.usedWords.length - 1][this.usedWords[this.usedWords.length - 1].length - 1]
-            ).element.classList.add('submitted');
+            const lastWord = this.usedWords[this.usedWords.length - 1];
+            const lastLetter = lastWord[lastWord.length - 1];
+            const letterObj = this.letterElements.get(lastLetter);
+            if (letterObj) {
+                letterObj.element.classList.add('submitted');
+                letterObj.letterText.classList.add('submitted')
+            }
         }
 
         if (this.currentWord.length > 0) {
-            this.letterElements.get(this.currentWord[0]).element.classList.add('visited');
+            const firstLetter = this.currentWord[0];
+            const letterObj = this.letterElements.get(firstLetter);
+            if (letterObj) {
+                letterObj.element.classList.add('visited');
+                letterObj.letterText.classList.add('visited');
+            }
+
             for (let i = 0; i < this.currentWord.length - 1; i++) {
-                this.letterElements.get(this.currentWord[i + 1]).element.classList.add('visited');
+                const letterObj = this.letterElements.get(this.currentWord[i + 1]);
+                letterObj.element.classList.add('visited');
+                letterObj.letterText.classList.add('visited');
                 this.drawConnectionLine(this.currentWord[i], this.currentWord[i + 1], false);
             }
         }
@@ -631,7 +654,8 @@ class LetterBoxed {
 
         this.usedWords.push(this.currentWord);
         this.currentWord = this.currentWord[this.currentWord.length - 1];
-        this.currentWordDisplay.textContent = [...this.usedWords, this.currentWord].join(', ');
+        this.currentWordDisplay.textContent = this.currentWord;
+        this.usedWordsDisplay.textContent = this.usedWords.join(', ');
         this.drawConnections();
 
         if (this.visitedLetters.size === this.totalLetters) {
@@ -649,40 +673,43 @@ class LetterBoxed {
         }
 
         if (this.currentWord.length > 1) {
-            console.log('> 1 char left in current word', this.currentWord, this.usedWords)
             let lastLetter = this.currentWord[this.currentWord.length - 1];
             // unmark the last letter as visited
-            this.letterElements.get(lastLetter).element.classList.remove('visited');
-
+            const letterObj = this.letterElements.get(lastLetter);
+            if (letterObj) {
+                letterObj.element.classList.remove('visited');
+                letterObj.letterText.classList.remove('visited');
+            }
             // remove the last letter from the current word
             this.currentWord = this.currentWord.slice(0, -1);
         } else {
-            console.log('<= 1 char left in current word', this.currentWord, this.usedWords)
-            console.log('unmark the first letter of the current word', this.currentWord[0])
-            this.letterElements.get(this.currentWord[0]).element.classList.remove('visited');
-            this.letterElements.get(this.currentWord[0]).element.classList.remove('submitted');
-            // if the length is 1 and there are previous words, replace the last last word with the current word
+            const firstLetter = this.currentWord[0];
+            const letterObj = this.letterElements.get(firstLetter);
+            if (letterObj) {
+                letterObj.element.classList.remove('visited');
+                letterObj.element.classList.remove('submitted');
+                letterObj.letterText.classList.remove('visited');
+                letterObj.letterText.classList.remove('submitted');
+            }
             if (this.usedWords.length > 0) {
-                // remove the the first letter of the current word as visited and submitted
-                // replace the current word with the last used word
                 let lastWord = this.usedWords[this.usedWords.length - 1];
-                // remove submitted from every letter of the last word
                 for (let i = this.usedWords.length > 1 ? 1 : 0 ; i < lastWord.length; i++) {
-                    console.log('unmark the letter', lastWord, lastWord[i], 'as submitted')
-                    this.letterElements.get(lastWord[i]).element.classList.remove('submitted');
+                    const wordLetterObj = this.letterElements.get(lastWord[i]);
+                    if (wordLetterObj) {
+                        wordLetterObj.element.classList.remove('submitted');
+                        wordLetterObj.letterText.classList.remove('submitted');
+                    }
                 }
-                console.log('make the last word the current word', lastWord)
                 this.currentWord = lastWord;
                 this.usedWords.pop();
             } else {
-                // if there are no previous words, clear the current word
-                console.log('no previous words, clear the current word')
                 this.currentWord = '';
                 this.currentWordDisplay.textContent = '';
                 this.drawConnections();
             }
         }
-        this.currentWordDisplay.textContent = [...this.usedWords, this.currentWord].join(', ');
+        this.currentWordDisplay.textContent = this.currentWord;
+        this.usedWordsDisplay.textContent = this.usedWords.join(', ');
         this.drawConnections();
     }
 
@@ -696,12 +723,15 @@ class LetterBoxed {
         this.visitedLetters = new Set();
         this.lastLetter = null;
         this.currentWordDisplay.textContent = '';
+        this.usedWordsDisplay.textContent = '';
         this.drawConnections();
         
         // Reset letter styles
         this.letterElements.forEach(letterElement => {
             letterElement.element.classList.remove('visited');
             letterElement.element.classList.remove('submitted');
+            letterElement.letterText.classList.remove('visited');
+            letterElement.letterText.classList.remove('submitted');
         });
     }
 
