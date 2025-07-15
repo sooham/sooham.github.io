@@ -68,6 +68,7 @@ class LetterBoxed {
         this.usedWords = [];
         this.visitedLetters = new Set();
         this.letterElements = new Map(); // Map letters to their DOM elements
+        this.win = false; // Track win state
         
         // Display configuration with defaults
         this.config = {
@@ -165,7 +166,9 @@ class LetterBoxed {
     setupGameDOM() {
         this.container.className = 'letter-boxed-container';
         this.container.style.width = this.config.gameSize + 'px';
-        this.container.style.height = (this.config.gameSize + 300) + 'px'; // Extra height for controls and settings
+        //this.container.style.height = (this.config.gameSize + 300) + 'px'; // Extra height for controls and settings
+        // Make container focusable
+        this.container.setAttribute('tabindex', '0');
 
         const letterBoxedContainer = document.createElement('div');
         letterBoxedContainer.className = 'letter-boxed-container';
@@ -224,10 +227,12 @@ class LetterBoxed {
         const deleteBtn = document.createElement('button');
         deleteBtn.textContent = 'Delete';
         deleteBtn.className = 'game-button';
+        this.deleteBtn = deleteBtn; // Store reference
 
         const enterBtn = document.createElement('button');
         enterBtn.textContent = 'Enter';
         enterBtn.className = 'game-button';
+        this.enterBtn = enterBtn; // Store reference
 
         // Add event listeners
         enterBtn.addEventListener('click', () => this.submitWord());
@@ -629,6 +634,7 @@ class LetterBoxed {
      * @public
      */
     submitWord() {
+        if (this.win) return; // Prevent action if game is won
         if (this.currentWord.length < 3) {
             // TODO: do not alert
             alert('Words must be at least 3 letters long');
@@ -658,6 +664,9 @@ class LetterBoxed {
 
         if (this.visitedLetters.size === this.totalLetters) {
             alert("Congratulations! You've used all letters!");
+            this.win = true;
+            if (this.enterBtn) this.enterBtn.disabled = true;
+            if (this.deleteBtn) this.deleteBtn.disabled = true;
         }
     }
 
@@ -666,6 +675,7 @@ class LetterBoxed {
      * @public
      */
     deleteLastLetter() {
+        if (this.win) return; // Prevent action if game is won
         if (this.currentWord.length === 0) {
             return;
         }
@@ -723,6 +733,9 @@ class LetterBoxed {
         this.currentWordDisplay.textContent = '';
         this.usedWordsDisplay.textContent = '';
         this.drawConnections();
+        this.win = false;
+        if (this.enterBtn) this.enterBtn.disabled = false;
+        if (this.deleteBtn) this.deleteBtn.disabled = false;
         
         // Reset letter styles
         this.letterElements.forEach(letterElement => {
@@ -739,6 +752,57 @@ class LetterBoxed {
      */
     init() {
         this.setupGameDOM();
+        // Keyboard event handling
+        this._keyboardHandler = (e) => {
+            if (this.win) return; // Disable keybindings if game is won
+            // Only handle if this container is visible in the viewport
+            if (!this.isContainerVisible()) return;
+            // Ignore if focus is on an input or textarea
+            const active = document.activeElement;
+            if (
+                active &&
+                typeof active.tagName === 'string' &&
+                (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA')
+            ) {
+                return;
+            }
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                this.submitWord();
+            } else if (e.key === 'Backspace') {
+                e.preventDefault();
+                this.deleteLastLetter();
+            } else if (e.key.length === 1 && /[a-zA-Z]/.test(e.key)) {
+                // Check if the letter is in the current game
+                const upper = e.key.toUpperCase();
+                const allLetters = [
+                    ...this.letters.top,
+                    ...this.letters.right,
+                    ...this.letters.bottom,
+                    ...this.letters.left
+                ];
+                if (allLetters.includes(upper)) {
+                    e.preventDefault();
+                    this.handleLetterClick(upper);
+                }
+            }
+        };
+        document.addEventListener('keydown', this._keyboardHandler);
+    }
+
+    /**
+     * Checks if the game container is visible in the viewport
+     * @returns {boolean}
+     */
+    isContainerVisible() {
+        const rect = this.container.getBoundingClientRect();
+        return (
+            rect.top < window.innerHeight &&
+            rect.bottom > 0 &&
+            rect.left < window.innerWidth &&
+            rect.right > 0 &&
+            this.container.offsetParent !== null // not display:none
+        );
     }
 }
 
@@ -763,7 +827,7 @@ document.addEventListener('DOMContentLoaded', () => {
             gameSize: 450,
             margin: 55,
             circleRadius: 12,
-            wordCircleGap: 5,
+            wordCircleGap: 6,
             borderThickness: 5
             }
         }
