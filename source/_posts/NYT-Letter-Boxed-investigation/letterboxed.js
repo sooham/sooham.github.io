@@ -383,7 +383,7 @@ class LetterBoxed {
 
         // Update display
         this.currentWordDisplay.textContent = this.currentWord;
-        this.usedWordsDisplay.textContent = this.usedWords.join(', ');
+        this.usedWordsDisplay.textContent = this.usedWords.join(' - ');
 
         // Restore visited letter styles
         this.visitedLetters.forEach(letter => {
@@ -659,7 +659,7 @@ class LetterBoxed {
         this.usedWords.push(this.currentWord);
         this.currentWord = this.currentWord[this.currentWord.length - 1];
         this.currentWordDisplay.textContent = this.currentWord;
-        this.usedWordsDisplay.textContent = this.usedWords.join(', ');
+        this.usedWordsDisplay.textContent = this.usedWords.join(' - ');
         this.drawConnections();
 
         if (this.visitedLetters.size === this.totalLetters) {
@@ -717,7 +717,7 @@ class LetterBoxed {
             }
         }
         this.currentWordDisplay.textContent = this.currentWord;
-        this.usedWordsDisplay.textContent = this.usedWords.join(', ');
+        this.usedWordsDisplay.textContent = this.usedWords.join(' - ');
         this.drawConnections();
     }
 
