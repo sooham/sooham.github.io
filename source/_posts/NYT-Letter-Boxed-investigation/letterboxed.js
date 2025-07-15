@@ -450,7 +450,8 @@ class LetterBoxed {
                 this.letterElements.set(letter, {
                     element: letterCircle,
                     x: circlePos.x,
-                    y: circlePos.y
+                    y: circlePos.y,
+                    letterText: letterText
                 });
             });
         };
