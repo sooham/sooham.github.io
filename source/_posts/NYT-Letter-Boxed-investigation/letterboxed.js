@@ -1,320 +1,733 @@
+/**
+ * Function to load CSS file dynamically
+ * @param {string} href - The path to the CSS file to load
+ */
+function loadCSS(href) {
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.type = 'text/css';
+    link.href = href;
+    document.head.appendChild(link);
+}
+
+/**
+ * @typedef {Object} LettersSides
+ * @property {string[]} top - Array of 3 + letters for the top side
+ * @property {string[]} right - Array of 3 + letters for the right side
+ * @property {string[]} bottom - Array of 3 + letters for the bottom side
+ * @property {string[]} left - Array of 3 + letters for the left side
+ */
+
+/**
+ * @typedef {Object} DisplayConfig
+ * @property {number} [gameSize=500] - The size of the game board in pixels
+ * @property {number} [margin=50] - The margin around the game square in pixels
+ * @property {number} [circleRadius=12] - The radius of the letter circles in pixels
+ * @property {number} [wordCircleGap=5] - The gap between the word circles and the game square in pixels
+ * @property {number} [borderThickness=4] - The thickness of the border around the game square in pixels
+ */
+
+const DEFAULT_GAME_SIZE = 450;
+const DEFAULT_MARGIN = 55;
+const DEFAULT_CIRCLE_RADIUS = 12;
+const DEFAULT_WORD_CIRCLE_GAP = 5;
+const DEFAULT_BORDER_THICKNESS = 5;
+const DEFAULT_WORDS_FILE = 'filtered_words_dictionary.json';
+
 class LetterBoxed {
-    constructor(container) {
+    /**
+     * Creates a new LetterBoxed game instance
+     * @param {HTMLElement} container - The container element for the game
+     * @param {LettersSides} letters - The letters to be used in the game, organized by side
+     * @param {DisplayConfig} [displayConfig={}] - The configuration for the display
+     */
+    constructor(container, letters, displayConfig = {}, wordsFile = DEFAULT_WORDS_FILE) {
+        this.validateLetters(letters)
+        this.letters = letters;
+        this.totalLetters = this.letters.top.length + this.letters.right.length + this.letters.bottom.length + this.letters.left.length;
+        this.wordsFile = wordsFile;
+        this.loadWords();
+
         this.container = container;
-        this.letters = {
-            top: ['A', 'I', 'E'],
-            right: ['R', 'T', 'K'],
-            bottom: ['L', 'U', 'M'],
-            left: ['B', 'O', 'H']
-        };
         this.currentWord = '';
         this.usedWords = [];
         this.visitedLetters = new Set();
-        this.lastLetter = null;
-        this.canvas = null;
-        this.ctx = null;
-        this.points = [];
-        this.currentPath = [];
-        this.isDrawing = false;
+        this.letterElements = new Map(); // Map letters to their DOM elements
+        
+        // Display configuration with defaults
+        this.config = {
+            gameSize: displayConfig.gameSize || DEFAULT_GAME_SIZE,
+            margin: displayConfig.margin || DEFAULT_MARGIN,
+            circleRadius: displayConfig.circleRadius || DEFAULT_CIRCLE_RADIUS, // Half of 24px width
+            wordCircleGap: displayConfig.wordCircleGap || DEFAULT_WORD_CIRCLE_GAP,
+            borderThickness: displayConfig.borderThickness || DEFAULT_BORDER_THICKNESS,
 
+            ...displayConfig
+        };
+        
         this.init();
     }
 
-    init() {
-        // Create game container
-        this.container.style.position = 'relative';
-        this.container.style.width = '400px';
-        this.container.style.height = '500px';
-        this.container.style.margin = '0 auto';
+    loadWords() {
+        // Ensure the path is relative to the current JS file location
+        fetch('./' + this.wordsFile)
+            .then(response => response.json())
+            .then(data => {
+                // Get the set of allowed letters for this game
+                const allowedLetters = new Set([
+                    ...this.letters.top,
+                    ...this.letters.right,
+                    ...this.letters.bottom,
+                    ...this.letters.left
+                ].map(l => l.toUpperCase()));
 
-        // Create canvas
-        this.canvas = document.createElement('canvas');
-        this.canvas.width = 400;
-        this.canvas.height = 400;
-        this.canvas.style.border = '2px solid #333';
-        this.ctx = this.canvas.getContext('2d');
-        
-        // Create input and buttons container
+                // Parallel filtering using Promise.all and chunking
+                const allWords = Object.keys(data);
+                const chunkSize = 2000; // Tune for best performance
+                const chunks = [];
+                for (let i = 0; i < allWords.length; i += chunkSize) {
+                    chunks.push(allWords.slice(i, i + chunkSize));
+                }
+
+                // Each chunk is filtered in a microtask (not true thread parallelism, but parallelizable in browser event loop)
+                return Promise.all(
+                    chunks.map(chunk => {
+                        return new Promise(resolve => {
+                            const filtered = {};
+                            for (const word of chunk) {
+                                const wordLetters = word.toUpperCase();
+                                if (wordLetters.every(letter => allowedLetters.has(letter))) {
+                                    filtered[word.toUpperCase()] = data[word];
+                                }
+                            }
+                            resolve(filtered);
+                        });
+                    })
+                ).then(filteredChunks => {
+                    // Merge all filtered chunks
+                    this.words = Object.assign({}, ...filteredChunks);
+                });
+            })
+            .catch(err => {
+                console.error('Failed to load words file:', this.wordsFile, err);
+                this.words = {};
+            });
+    }
+
+    validateLetters(letters) {
+        // Check that all sides exist
+        if (!letters.top || !letters.right || !letters.bottom || !letters.left) {
+            throw new Error('All sides (top, right, bottom, left) must be defined');
+        }
+
+        // Combine all letters into a single array
+        const allLetters = [
+            ...letters.top,
+            ...letters.right, 
+            ...letters.bottom,
+            ...letters.left
+        ];
+
+        // Check that all letters are uppercase
+        for (const letter of allLetters) {
+            if (typeof letter !== 'string' || letter.length !== 1 || letter !== letter.toUpperCase()) {
+                throw new Error('All letters must be uppercase single characters');
+            }
+        }
+
+        // Check for uniqueness by converting to Set
+        const uniqueLetters = new Set(allLetters);
+        if (uniqueLetters.size !== allLetters.length) {
+            throw new Error('All letters must be unique');
+        }
+    }
+
+    /**
+     * Sets up the main game DOM structure
+     * @private
+     */
+    setupGameDOM() {
+        this.container.className = 'letter-boxed-container';
+        this.container.style.width = this.config.gameSize + 'px';
+        this.container.style.height = (this.config.gameSize + 300) + 'px'; // Extra height for controls and settings
+
+        const letterBoxedContainer = document.createElement('div');
+        letterBoxedContainer.className = 'letter-boxed-container';
+
+        // Create current word display
+        const currentWordDisplay = document.createElement('div');
+        currentWordDisplay.className = 'current-word';
+        this.currentWordDisplay = currentWordDisplay;
+
+        // Create game board
+        const gameBoard = document.createElement('div');
+        gameBoard.className = 'game-board';
+        this.gameBoard = gameBoard;
+
+        // Create square
+        const square = document.createElement('div');
+        square.className = 'game-square';
+        square.style.top = this.config.margin + 'px';
+        square.style.left = this.config.margin + 'px';
+        square.style.width = (this.config.gameSize - this.config.margin * 2) + 'px';
+        square.style.height = (this.config.gameSize - this.config.margin * 2) + 'px';
+        square.style.borderWidth = Math.min(this.config.borderThickness, this.config.circleRadius) + 'px';
+
+        // Create container for lines
+        this.linesContainer = document.createElement('div');
+        this.linesContainer.className = 'lines-container';
+        this.linesContainer.style.position = 'absolute';
+        this.linesContainer.style.top = '0';
+        this.linesContainer.style.left = '0';
+        this.linesContainer.style.width = '100%';
+        this.linesContainer.style.height = '100%';
+
+        // Add letters and circles
+        this.createLetters(gameBoard);
+
+        // Create controls
         const controls = document.createElement('div');
-        controls.style.marginTop = '20px';
-        controls.style.textAlign = 'center';
-        
-        // Create word input
-        this.wordInput = document.createElement('input');
-        this.wordInput.type = 'text';
-        this.wordInput.style.fontSize = '20px';
-        this.wordInput.style.padding = '5px';
-        this.wordInput.style.marginRight = '10px';
-        this.wordInput.style.textTransform = 'uppercase';
-        
+        controls.className = 'controls';
+
         // Create buttons
-        const enterBtn = document.createElement('button');
-        enterBtn.textContent = 'Enter';
-        enterBtn.style.fontSize = '18px';
-        enterBtn.style.padding = '5px 15px';
-        enterBtn.style.marginRight = '10px';
-        
-        const deleteBtn = document.createElement('button');
-        deleteBtn.textContent = 'Delete';
-        deleteBtn.style.fontSize = '18px';
-        deleteBtn.style.padding = '5px 15px';
-        deleteBtn.style.marginRight = '10px';
-        
         const restartBtn = document.createElement('button');
         restartBtn.textContent = 'Restart';
-        restartBtn.style.fontSize = '18px';
-        restartBtn.style.padding = '5px 15px';
+        restartBtn.className = 'game-button';
+
+        const deleteBtn = document.createElement('button');
+        deleteBtn.textContent = 'Delete';
+        deleteBtn.className = 'game-button';
+
+        const enterBtn = document.createElement('button');
+        enterBtn.textContent = 'Enter';
+        enterBtn.className = 'game-button';
 
         // Add event listeners
         enterBtn.addEventListener('click', () => this.submitWord());
         deleteBtn.addEventListener('click', () => this.deleteLastLetter());
         restartBtn.addEventListener('click', () => this.restart());
-        this.wordInput.addEventListener('input', (e) => this.handleInput(e));
-        
+
         // Append elements
-        controls.appendChild(this.wordInput);
-        controls.appendChild(enterBtn);
-        controls.appendChild(deleteBtn);
         controls.appendChild(restartBtn);
-        
-        this.container.appendChild(this.canvas);
+        controls.appendChild(deleteBtn);
+        controls.appendChild(enterBtn);
+
+        gameBoard.appendChild(square);
+        gameBoard.appendChild(this.linesContainer);
+
+        // Create settings panel
+        const settingsPanel = this.createSettingsPanel();
+
+        this.container.appendChild(currentWordDisplay);
+        this.container.appendChild(gameBoard);
         this.container.appendChild(controls);
-
-        // Calculate letter positions
-        this.calculateLetterPositions();
-        this.draw();
-
-        // Add canvas event listeners
-        this.canvas.addEventListener('mousedown', (e) => this.startDrawing(e));
-        this.canvas.addEventListener('mousemove', (e) => this.draw(e));
-        this.canvas.addEventListener('mouseup', () => this.stopDrawing());
-        this.canvas.addEventListener('mouseleave', () => this.stopDrawing());
+        this.container.appendChild(settingsPanel);
     }
 
-    calculateLetterPositions() {
-        const margin = 50;
-        const size = this.canvas.width - (2 * margin);
-        
-        // Calculate positions for each side
-        this.letterPositions = {
-            top: [],
-            right: [],
-            bottom: [],
-            left: []
-        };
+    /**
+     * Creates the settings panel with sliders for game configuration
+     * @private
+     * @returns {HTMLElement} The settings panel element
+     */
+    createSettingsPanel() {
+        const settingsPanel = document.createElement('div');
+        settingsPanel.className = 'settings-panel';
+        settingsPanel.style.marginTop = '20px';
+        settingsPanel.style.padding = '15px';
+        settingsPanel.style.border = '1px solid #ccc';
+        settingsPanel.style.circleRadius = '8px';
+        settingsPanel.style.backgroundColor = '#f9f9f9';
 
-        // Top side
-        for (let i = 0; i < 3; i++) {
-            this.letterPositions.top.push({
-                x: margin + (i * size/2),
-                y: margin,
-                letter: this.letters.top[i]
-            });
-        }
+        const title = document.createElement('h3');
+        title.textContent = 'Settings';
+        title.style.margin = '0 0 15px 0';
+        title.style.fontSize = '16px';
+        settingsPanel.appendChild(title);
 
-        // Right side
-        for (let i = 0; i < 3; i++) {
-            this.letterPositions.right.push({
-                x: this.canvas.width - margin,
-                y: margin + (i * size/2),
-                letter: this.letters.right[i]
-            });
-        }
-
-        // Bottom side (reverse order)
-        for (let i = 2; i >= 0; i--) {
-            this.letterPositions.bottom.push({
-                x: margin + (i * size/2),
-                y: this.canvas.height - margin,
-                letter: this.letters.bottom[2-i]
-            });
-        }
-
-        // Left side (reverse order)
-        for (let i = 2; i >= 0; i--) {
-            this.letterPositions.left.push({
-                x: margin,
-                y: margin + (i * size/2),
-                letter: this.letters.left[2-i]
-            });
-        }
-
-        // Create flat array of all points
-        this.points = [
-            ...this.letterPositions.top,
-            ...this.letterPositions.right,
-            ...this.letterPositions.bottom,
-            ...this.letterPositions.left
+        // Create sliders for each setting
+        const settings = [
+            { key: 'gameSize', label: 'Game Size', min: 300, max: 800, step: 50 },
+            { key: 'margin', label: 'Margin', min: 20, max: 100, step: 5 },
+            { key: 'circleRadius', label: 'Circle Radius', min: 8, max: 40, step: 2 },
+            { key: 'wordCircleGap', label: 'Word Circle Gap', min: 0, max: 20, step: 5 },
+            { key: 'borderThickness', label: 'Border Thickness', min: 0, max: 20, step: 1 }
         ];
-    }
 
-    draw() {
-        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-        
-        // Draw the square
-        this.ctx.beginPath();
-        this.ctx.moveTo(this.letterPositions.top[0].x, this.letterPositions.top[0].y);
-        this.ctx.lineTo(this.letterPositions.top[2].x, this.letterPositions.top[2].y);
-        this.ctx.lineTo(this.letterPositions.right[0].x, this.letterPositions.right[0].y);
-        this.ctx.lineTo(this.letterPositions.right[2].x, this.letterPositions.right[2].y);
-        this.ctx.lineTo(this.letterPositions.bottom[2].x, this.letterPositions.bottom[2].y);
-        this.ctx.lineTo(this.letterPositions.bottom[0].x, this.letterPositions.bottom[0].y);
-        this.ctx.lineTo(this.letterPositions.left[2].x, this.letterPositions.left[2].y);
-        this.ctx.lineTo(this.letterPositions.left[0].x, this.letterPositions.left[0].y);
-        this.ctx.closePath();
-        this.ctx.strokeStyle = '#333';
-        this.ctx.lineWidth = 2;
-        this.ctx.stroke();
+        settings.forEach(setting => {
+            const sliderContainer = document.createElement('div');
+            sliderContainer.style.marginBottom = '10px';
+            sliderContainer.style.display = 'flex';
+            sliderContainer.style.alignItems = 'center';
+            sliderContainer.style.gap = '10px';
 
-        // Draw letters
-        this.ctx.font = '24px Arial';
-        this.ctx.fillStyle = '#000';
-        this.ctx.textAlign = 'center';
-        this.ctx.textBaseline = 'middle';
-        
-        this.points.forEach(point => {
-            // Draw circle
-            this.ctx.beginPath();
-            this.ctx.arc(point.x, point.y, 20, 0, Math.PI * 2);
-            this.ctx.fillStyle = this.visitedLetters.has(point.letter) ? '#e0e0e0' : '#fff';
-            this.ctx.fill();
-            this.ctx.stroke();
-            
-            // Draw letter
-            this.ctx.fillStyle = '#000';
-            this.ctx.fillText(point.letter, point.x, point.y);
+            const label = document.createElement('label');
+            label.textContent = setting.label + ':';
+            label.style.minWidth = '100px';
+            label.style.fontSize = '14px';
+
+            const slider = document.createElement('input');
+            slider.type = 'range';
+            slider.min = setting.min;
+            slider.max = setting.max;
+            slider.step = setting.step;
+            slider.value = this.config[setting.key];
+            slider.style.flex = '1';
+
+            const valueDisplay = document.createElement('span');
+            valueDisplay.textContent = this.config[setting.key];
+            valueDisplay.style.minWidth = '40px';
+            valueDisplay.style.fontSize = '14px';
+            valueDisplay.style.fontWeight = 'bold';
+
+            slider.addEventListener('input', (e) => {
+                const newValue = parseInt(e.target.value);
+                valueDisplay.textContent = newValue;
+                this.updateSetting(setting.key, newValue);
+            });
+
+            sliderContainer.appendChild(label);
+            sliderContainer.appendChild(slider);
+            sliderContainer.appendChild(valueDisplay);
+            settingsPanel.appendChild(sliderContainer);
         });
 
-        // Draw current path
-        if (this.currentPath.length > 1) {
-            this.ctx.beginPath();
-            this.ctx.moveTo(this.currentPath[0].x, this.currentPath[0].y);
-            for (let i = 1; i < this.currentPath.length; i++) {
-                this.ctx.lineTo(this.currentPath[i].x, this.currentPath[i].y);
+        return settingsPanel;
+    }
+
+    /**
+     * Updates a configuration setting and rebuilds the game
+     * @private
+     * @param {string} key - The configuration key to update
+     * @param {number} value - The new value for the setting
+     */
+    updateSetting(key, value) {
+        this.config[key] = value;
+        this.rebuildGame();
+    }
+
+    /**
+     * Rebuilds the game with current configuration while preserving game state
+     * @private
+     */
+    rebuildGame() {
+        // Store current game state
+        const currentState = {
+            currentWord: this.currentWord,
+            usedWords: [...this.usedWords],
+            visitedLetters: new Set(this.visitedLetters),
+        };
+
+        // Update container size
+        this.container.style.width = this.config.gameSize + 'px';
+        this.container.style.height = (this.config.gameSize + 300) + 'px';
+
+
+        // Clear existing letters and lines
+        this.letterElements.clear();
+        this.linesContainer.innerHTML = '';
+
+        // Remove old letters and circles
+        const oldLetters = this.gameBoard.querySelectorAll('.letter-circle, .letter-text');
+        oldLetters.forEach(el => el.remove());
+
+        // Update square size and position
+        const square = this.gameBoard.querySelector('.game-square');
+        square.style.top = this.config.margin + 'px';
+        square.style.left = this.config.margin + 'px';
+        square.style.width = (this.config.gameSize - this.config.margin * 2) + 'px';
+        square.style.height = (this.config.gameSize - this.config.margin * 2) + 'px';
+        square.style.borderWidth = Math.min(this.config.borderThickness, this.config.circleRadius) + 'px';
+
+        // Recreate letters with new positions
+        this.createLetters(this.gameBoard);
+
+        // Restore game state
+        this.currentWord = currentState.currentWord;
+        this.usedWords = currentState.usedWords;
+        this.visitedLetters = currentState.visitedLetters;
+
+        // Update display
+        this.currentWordDisplay.textContent = [...this.usedWords, this.currentWord].join(', ');
+
+        // Restore visited letter styles
+        this.visitedLetters.forEach(letter => {
+            const letterElement = this.letterElements.get(letter);
+            if (letterElement) {
+                letterElement.element.classList.add('visited');
             }
-            this.ctx.strokeStyle = '#007AFF';
-            this.ctx.lineWidth = 3;
-            this.ctx.stroke();
-        }
+        });
+
+
+        // Rebuild the path for used words
+        this.drawConnections();
     }
 
-    handleInput(e) {
-        const input = e.target.value.toUpperCase();
-        if (input !== this.currentWord) {
-            this.currentWord = input;
-            this.updatePath();
-        }
-    }
+    /**
+     * Creates letter elements and positions them on the game board
+     * @private
+     * @param {HTMLElement} gameBoard - The game board element
+     */
+    createLetters(gameBoard) {
+        const margin = this.config.margin;
+        const size = this.config.gameSize - this.config.margin * 2;
+        const radius = this.config.circleRadius;
+        const textCirclePadding = this.config.wordCircleGap;
 
-    updatePath() {
-        this.currentPath = [];
-        let lastSide = null;
-        
-        for (let i = 0; i < this.currentWord.length; i++) {
-            const letter = this.currentWord[i];
-            const point = this.points.find(p => p.letter === letter);
-            
-            if (point) {
-                // Determine current side
-                let currentSide;
-                if (this.letterPositions.top.includes(point)) currentSide = 'top';
-                else if (this.letterPositions.right.includes(point)) currentSide = 'right';
-                else if (this.letterPositions.bottom.includes(point)) currentSide = 'bottom';
-                else if (this.letterPositions.left.includes(point)) currentSide = 'left';
+        const topSpacing = size / (this.letters.top.length + 1);
+        const rightSpacing = size / (this.letters.right.length + 1);
+        const bottomSpacing = size / (this.letters.bottom.length + 1);
+        const leftSpacing = size / (this.letters.left.length + 1);
+        const fontSize = 24;
+        const borderWidth = this.config.borderThickness;
+
+        // Create letters for each side
+        const createSideLetters = (side, letters, getCirclePosition) => {
+            /*
+            getCirclePosition needs to give the center point of the circle in x and y coordinates
+            */  
+            letters.forEach((letter, i) => {
+                const circlePos = getCirclePosition(i);
                 
-                // Check if letter is from same side
-                if (currentSide === lastSide) {
-                    this.wordInput.style.color = 'red';
-                    return;
+                // Create circle
+                const letterCircle = document.createElement('div');
+                letterCircle.className = 'letter-circle';
+                letterCircle.style.borderWidth = Math.min(borderWidth, radius) + 'px';
+                letterCircle.style.width = (radius * 2) + 'px';
+                letterCircle.style.height = (radius * 2) + 'px';
+                letterCircle.style.left = (circlePos.x - radius) + 'px';
+                letterCircle.style.top = (circlePos.y - radius) + 'px';
+                letterCircle.addEventListener('click', () => this.handleLetterClick(letter));
+                
+                // Create text element
+                const letterText = document.createElement('div');
+                letterText.className = 'letter-text';
+                letterText.textContent = letter;
+                letterText.style.width = fontSize + 'px';
+                letterText.style.height = fontSize + 'px';
+
+                let letterXOffset = 0;
+                let letterYOffset = 0;
+                if (side === 'top') {
+                    // offset X by half the size of text
+                    letterXOffset = - fontSize / 2;
+                    // offset Y by the radius of the circle + padding above
+                    letterYOffset = -radius - textCirclePadding - fontSize;
+                } else if (side === 'right') {
+                    letterXOffset = radius + textCirclePadding;
+                    letterYOffset = - fontSize / 2;
+                } else if (side === 'bottom') {
+                    letterXOffset = - fontSize / 2;
+                    letterYOffset = radius + textCirclePadding;
+                } else if (side === 'left') {
+                    letterXOffset = - radius - textCirclePadding - fontSize;
+                    letterYOffset = - fontSize / 2;
                 }
-                
-                this.currentPath.push(point);
-                lastSide = currentSide;
-                this.wordInput.style.color = 'black';
-            }
-        }
-        
-        this.draw();
+
+                letterText.style.left = (circlePos.x + letterXOffset) + 'px';
+                letterText.style.top = (circlePos.y + letterYOffset) + 'px';
+
+                gameBoard.appendChild(letterCircle);
+                gameBoard.appendChild(letterText);
+                this.letterElements.set(letter, {
+                    element: letterCircle,
+                    x: circlePos.x,
+                    y: circlePos.y
+                });
+            });
+        };
+
+        // Top side - circles on border, letters above
+        createSideLetters('top', this.letters.top, 
+            (i) => ({
+                x: margin + topSpacing + (i * topSpacing),
+                y: margin + Math.min(borderWidth, radius) / 2
+            })
+        );
+
+        // Right side - circles on border, letters to the right
+        createSideLetters('right', this.letters.right, 
+            (i) => ({
+                x: margin + size - Math.min(borderWidth, radius) / 2,
+                y: margin + rightSpacing + (i * rightSpacing)
+            })
+        );
+
+        // Bottom side - circles on border, letters below
+        createSideLetters('bottom', this.letters.bottom, 
+            (i) => ({
+                x: margin + bottomSpacing + (i * bottomSpacing),
+                y: margin + size - Math.min(borderWidth, radius) / 2
+            })
+        );
+
+        // Left side - circles on border, letters to the left
+        createSideLetters('left', this.letters.left, 
+            (i) => ({
+                x: margin + Math.min(borderWidth, radius) / 2,
+                y: margin + leftSpacing + (i * leftSpacing)
+            })
+        );
     }
 
+    /**
+     * Handles letter click events and updates the current word
+     * @private
+     * @param {string} letter - The clicked letter
+     */
+    handleLetterClick(letter) {
+        let lastLetter = null;
+        if (this.currentWord.length === 0) {
+            if (this.usedWords.length > 0) {
+                lastLetter = this.usedWords[this.usedWords.length - 1][this.usedWords[this.usedWords.length - 1].length - 1];
+            }
+        } else {
+            lastLetter = this.currentWord[this.currentWord.length - 1];
+        }
+
+        if (lastLetter && this.areLettersOnSameSide(letter, lastLetter)) {
+            return;
+        }
+
+        this.currentWord += letter;
+        this.currentWordDisplay.textContent = [...this.usedWords, this.currentWord].join(', ');
+
+        this.drawConnections();
+    }
+
+    /**
+     * Checks if two letter elements are on the same side of the square
+     * @private
+     * @param {HTMLElement} elem1 - First letter element
+     * @param {HTMLElement} elem2 - Second letter element
+     * @returns {boolean} True if letters are on the same side
+     */
+    areLettersOnSameSide(letter1, letter2) {
+        return this.letters.top.includes(letter1) && this.letters.top.includes(letter2) ||
+            this.letters.right.includes(letter1) && this.letters.right.includes(letter2) ||
+            this.letters.bottom.includes(letter1) && this.letters.bottom.includes(letter2) ||
+            this.letters.left.includes(letter1) && this.letters.left.includes(letter2);
+    }
+
+    /**
+     * Updates the visual path connecting letters
+     * @private
+     */
+    drawConnections() {
+
+        this.linesContainer.innerHTML = '';
+
+        // reset all the letter elements to not visited or submitted
+        // this.letterElements.forEach(letterElement => {
+        //     letterElement.element.classList.remove('visited');
+        //     letterElement.element.classList.remove('submitted');
+        // });
+
+        // draw the connections for the used words
+        for (let i = 0; i < this.usedWords.length; i++) {
+            const word = this.usedWords[i];
+            for (let j = 0; j < word.length - 1; j++) {
+                this.letterElements.get(word[j]).element.classList.add('submitted');
+                this.drawConnectionLine(word[j], word[j + 1], true);
+            }
+        }
+
+        // mark the last letter of the last used word as submitted
+        if (this.usedWords.length > 0) {
+            this.letterElements.get(
+                this.usedWords[this.usedWords.length - 1][this.usedWords[this.usedWords.length - 1].length - 1]
+            ).element.classList.add('submitted');
+        }
+
+        if (this.currentWord.length > 0) {
+            this.letterElements.get(this.currentWord[0]).element.classList.add('visited');
+            for (let i = 0; i < this.currentWord.length - 1; i++) {
+                this.letterElements.get(this.currentWord[i + 1]).element.classList.add('visited');
+                this.drawConnectionLine(this.currentWord[i], this.currentWord[i + 1], false);
+            }
+        }
+
+    }
+
+    /**
+     * Draw connection line between two letters 
+    */
+    drawConnectionLine(start, end, visited = false) {
+        const startElement = this.letterElements.get(start);
+        const endElement = this.letterElements.get(end);
+
+        const line = document.createElement('div');
+        line.className = 'connection-line';
+        if (visited) {
+            line.classList.add('visited');
+        }
+        line.dataset.start = `${start}`;
+        line.dataset.end = `${end}`;
+
+        // Calculate line properties
+        const dx = endElement.x - startElement.x;
+        const dy = endElement.y - startElement.y;
+        const length = Math.sqrt(dx * dx + dy * dy);
+        const angle = Math.atan2(dy, dx) * 180 / Math.PI;
+        const thickness = Math.min(this.config.borderThickness, this.config.circleRadius);
+
+        line.style.width = length + 'px';
+        line.style.height = thickness + 'px';
+        line.style.transform = `rotate(${angle}deg)`;
+        line.style.borderWidth = thickness / 2 + 'px';
+        line.style.left = (startElement.x) + 'px';
+        line.style.top = (startElement.y - thickness / 2) + 'px';
+
+        this.linesContainer.appendChild(line);
+    }
+
+
+    /**
+     * Submits the current word if valid
+     * @public
+     */
     submitWord() {
         if (this.currentWord.length < 3) {
+            // TODO: do not alert
             alert('Words must be at least 3 letters long');
             return;
         }
-        
-        // Check if word starts with last letter of previous word
-        if (this.lastLetter && this.currentWord[0] !== this.lastLetter) {
-            alert('Word must start with the last letter of the previous word');
+
+        /* TODO: check if the currentWord is a valid word, load the file called filtered_words_dictionary.json
+        that has keys of english words and values that are not relevant and check if the currentWord is a valid  
+         */
+        if (!this.words[this.currentWord]) {
+            // TODO: do not alert
+            alert('Not a valid word');
             return;
         }
-        
-        // Add letters to visited set
+
         for (const letter of this.currentWord) {
             this.visitedLetters.add(letter);
         }
-        
+
         this.usedWords.push(this.currentWord);
-        this.lastLetter = this.currentWord[this.currentWord.length - 1];
-        this.currentWord = '';
-        this.wordInput.value = '';
-        this.currentPath = [];
-        this.draw();
-        
-        // Check if all letters have been used
-        if (this.visitedLetters.size === 12) {
+        this.currentWord = this.currentWord[this.currentWord.length - 1];
+        this.currentWordDisplay.textContent = [...this.usedWords, this.currentWord].join(', ');
+        this.drawConnections();
+
+        if (this.visitedLetters.size === this.totalLetters) {
             alert("Congratulations! You've used all letters!");
         }
     }
 
+    /**
+     * Deletes the last letter from the current word
+     * @public
+     */
     deleteLastLetter() {
-        this.wordInput.value = this.wordInput.value.slice(0, -1);
-        this.currentWord = this.wordInput.value;
-        this.updatePath();
+        if (this.currentWord.length === 0) {
+            return;
+        }
+
+        if (this.currentWord.length > 1) {
+            console.log('> 1 char left in current word', this.currentWord, this.usedWords)
+            let lastLetter = this.currentWord[this.currentWord.length - 1];
+            // unmark the last letter as visited
+            this.letterElements.get(lastLetter).element.classList.remove('visited');
+
+            // remove the last letter from the current word
+            this.currentWord = this.currentWord.slice(0, -1);
+        } else {
+            console.log('<= 1 char left in current word', this.currentWord, this.usedWords)
+            console.log('unmark the first letter of the current word', this.currentWord[0])
+            this.letterElements.get(this.currentWord[0]).element.classList.remove('visited');
+            this.letterElements.get(this.currentWord[0]).element.classList.remove('submitted');
+            // if the length is 1 and there are previous words, replace the last last word with the current word
+            if (this.usedWords.length > 0) {
+                // remove the the first letter of the current word as visited and submitted
+                // replace the current word with the last used word
+                let lastWord = this.usedWords[this.usedWords.length - 1];
+                // remove submitted from every letter of the last word
+                for (let i = this.usedWords.length > 1 ? 1 : 0 ; i < lastWord.length; i++) {
+                    console.log('unmark the letter', lastWord, lastWord[i], 'as submitted')
+                    this.letterElements.get(lastWord[i]).element.classList.remove('submitted');
+                }
+                console.log('make the last word the current word', lastWord)
+                this.currentWord = lastWord;
+                this.usedWords.pop();
+            } else {
+                // if there are no previous words, clear the current word
+                console.log('no previous words, clear the current word')
+                this.currentWord = '';
+                this.currentWordDisplay.textContent = '';
+                this.drawConnections();
+            }
+        }
+        this.currentWordDisplay.textContent = [...this.usedWords, this.currentWord].join(', ');
+        this.drawConnections();
     }
 
+    /**
+     * Restarts the game to initial state
+     * @public
+     */
     restart() {
         this.currentWord = '';
         this.usedWords = [];
         this.visitedLetters = new Set();
         this.lastLetter = null;
-        this.currentPath = [];
-        this.wordInput.value = '';
-        this.draw();
-    }
-
-    startDrawing(e) {
-        const rect = this.canvas.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
+        this.currentWordDisplay.textContent = '';
+        this.drawConnections();
         
-        // Find if click is near any letter
-        const clickedPoint = this.points.find(point => {
-            const distance = Math.sqrt(
-                Math.pow(point.x - x, 2) + Math.pow(point.y - y, 2)
-            );
-            return distance < 20;
+        // Reset letter styles
+        this.letterElements.forEach(letterElement => {
+            letterElement.element.classList.remove('visited');
+            letterElement.element.classList.remove('submitted');
         });
-        
-        if (clickedPoint) {
-            this.isDrawing = true;
-            this.currentPath = [clickedPoint];
-            this.currentWord = clickedPoint.letter;
-            this.wordInput.value = this.currentWord;
-            this.draw();
-        }
     }
 
-    stopDrawing() {
-        this.isDrawing = false;
+    /**
+     * Initializes the game
+     * @private
+     */
+    init() {
+        this.setupGameDOM();
     }
 }
 
-// Initialize game when the script loads
+/**
+ * Initialize game when the script loads
+ * Creates a new LetterBoxed game instance with default configuration
+ */
 document.addEventListener('DOMContentLoaded', () => {
-    const gameContainer = document.getElementById('letter-boxed-game');
-    console.log("Loading Letter Boxed Game")
-    if (gameContainer) {
-        new LetterBoxed(gameContainer);
-    }
-}); 
+    loadCSS('letterboxed.css');
+    
+    // Dictionary mapping suffixes to game configurations
+    const gameConfigs = {
+        'main': {
+            letters: {
+                top: ['A', 'I', 'E'],
+                right: ['R', 'T', 'K'], 
+                bottom: ['L', 'U', 'M'],
+                left: ['B', 'O', 'H']
+            },
+            displayConfig: {
+            gameSize: 450,
+            margin: 55,
+            circleRadius: 12,
+            wordCircleGap: 5,
+            borderThickness: 5
+            }
+        }
+    };
+
+    // Find all elements with class starting with letter-boxed-game-
+    const gameContainers = document.querySelectorAll('[class^="letter-boxed-game-"]');
+    
+    gameContainers.forEach(gameContainer => {
+        // Get the suffix from the class name
+        const className = Array.from(gameContainer.classList)
+            .find(c => c.startsWith('letter-boxed-game-'));
+        const suffix = className?.split('letter-boxed-game-')[1];
+        
+        /** @type {DisplayConfig} */
+        const gameConfig = gameConfigs[suffix];
+        
+        new LetterBoxed(gameContainer, gameConfig.letters, gameConfig.displayConfig, DEFAULT_WORDS_FILE);
+    });
+});

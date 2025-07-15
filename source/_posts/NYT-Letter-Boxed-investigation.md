@@ -52,7 +52,7 @@ Objective is to find a path that meets all the above.
 
 ### Try playing a game for yourself!
 
-<div id="letter-boxed-game"></div>
+<div class="letter-boxed-game-main"></div>
 <script src="/2025/07/11/NYT-Letter-Boxed-investigation/letterboxed.js"></script>
 
 ## How can we find a solution for Letter Boxed? 
