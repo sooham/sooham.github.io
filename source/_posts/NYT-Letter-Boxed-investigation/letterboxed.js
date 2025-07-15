@@ -231,13 +231,16 @@ class LetterBoxed {
         gameBoard.appendChild(square);
         gameBoard.appendChild(this.linesContainer);
 
-        // Create settings panel
-        const settingsPanel = this.createSettingsPanel();
 
         this.container.appendChild(currentWordDisplay);
         this.container.appendChild(gameBoard);
         this.container.appendChild(controls);
-        this.container.appendChild(settingsPanel);
+
+        // Create settings panel
+        if (this.config.showSettings) {
+            const settingsPanel = this.createSettingsPanel();
+            this.container.appendChild(settingsPanel);
+        }
     }
 
     /**
@@ -727,6 +730,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 left: ['B', 'O', 'H']
             },
             displayConfig: {
+            showSettings: false,
             gameSize: 450,
             margin: 55,
             circleRadius: 12,

@@ -1,10 +1,16 @@
 
+:root {
+    --lb-pink: #faa6a4;
+    --lb-black: #000;
+    --lb-white: #fff;
+}
+
 .letter-boxed-container {
     margin: 0 auto;
     box-sizing: border-box;
 }
 
-.game-container {
+/* .game-container {
     width: 100%;
     margin: 0 auto;
     display: flex;
@@ -12,17 +18,19 @@
     align-items: center;
     gap: 20px;
     box-sizing: border-box;
-}
+    background-color: var(--lb-pink);
+} */
 
 .current-word {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
     font-size: 24px;
     font-weight: 700;
-    margin-bottom: 20px;
-    min-height: 30px;
+    padding-bottom: 20px;
+    height: 30px;
     letter-spacing: 0.5px;
     text-align: center;
     box-sizing: border-box;
+    background-color: var(--lb-pink);
 }
 
 .game-board {
@@ -31,40 +39,45 @@
     aspect-ratio: 1;
     margin: 0 auto;
     box-sizing: border-box;
+    background-color: var(--lb-pink);
 }
 
 .game-square {
     position: absolute;
     border-style: solid;
-    border-color: #000;
+    border-color: var(--lb-black);
     margin: 0 auto;
     box-sizing: border-box;
+    background-color: var(--lb-white);
 }
 
 .letter-circle {
     position: absolute;
     border-radius: 50%;
-    background: white;
-    border-color: #000;
+    background: var(--lb-white);
+    border-color: var(--lb-black);
     border-style: solid;
     cursor: pointer;
-    transition: background-color 0.2s;
+    /* Animate background and border color for all state changes */
+    transition: background-color 0.3s, border-color 0.3s, border-width 0.3s;
     z-index: 10;
     box-sizing: border-box;
 }
 
 .letter-circle.visited {
-    border: 3px solid #ff69b4;
-    transition: background-color 0.3s ease-in;
+    border: 3px solid var(--lb-white);
+    background-color: var(--lb-pink);
 }
 
 .letter-circle.submitted {
-    background-color: #ff69b4;
-    border: 3px solid #ff69b4;
+    background-color: var(--lb-black);
+    border: 3px solid var(--lb-pink);
+    /* No need to repeat transition, inherited from .letter-circle */
 }
 
 .letter-circle:hover {
-    background-color: #f0f0f0;
+    background-color: var(--lb-pink);
+    border: 3px solid var(--lb-pink);
 }
 
 .letter-text {
@@ -72,12 +85,18 @@
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
     font-weight: 700;
     font-size: 24px;
-    color: #000;
+    color: var(--lb-white);
     pointer-events: none;
     z-index: 11;
     letter-spacing: 0.25px;
     text-align: center;
 }
+
+.letter-text.visited,
+.letter-text.submitted {
+    color: var(--lb-black);
+}
+
 
 .controls {
     display: flex;
@@ -91,12 +110,12 @@
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
     font-weight: 600;
     font-size: 18px;
-    color: #000;
+    color: var(--lb-black);
     padding: 8px 16px;
     border-radius: 15px;
-    border: 2px solid #000;
+    border: 2px solid var(--lb-black);
     cursor: pointer;
-    background: white;
+    background: var(--lb-pink);
     transition: background-color 0.2s;
     min-width: 60px;
     min-height: 40px;
@@ -128,10 +147,23 @@
     pointer-events: none;
     border-style: dashed;
     border-width: 100%;
-    border-color: #ff69b4;
+    border-color: var(--lb-pink);
     box-sizing: border-box;
+    transition:
+        border-style 0.2s,
+        opacity 0.2s;
 } 
 
 .connection-line.visited {
     border-style: solid;
+    transition:
+        border-style 0.2s,
+        opacity 0.2s;
+}
+
+.connection-line.submitted {
+    opacity: 0.5;
+    transition:
+        border-style 0.2s,
+        opacity 0.2s;
 }
