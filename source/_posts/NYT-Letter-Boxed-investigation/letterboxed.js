@@ -638,9 +638,7 @@ class LetterBoxed {
         /* TODO: check if the currentWord is a valid word, load the file called filtered_words_dictionary.json
         that has keys of english words and values that are not relevant and check if the currentWord is a valid  
          */
-        console.log('checking if', this.currentWord, 'is a valid word');
         const wordKeys = Object.keys(this.words);
-        console.log('First 10 words:', wordKeys.slice(0, 10));
 
         if (!this.words[this.currentWord]) {
             // TODO: do not alert
