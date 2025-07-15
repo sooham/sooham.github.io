@@ -11,6 +11,21 @@ function loadCSS(href) {
 }
 
 /**
+ * Loads a JSON file from the given URL and returns a Promise that resolves to the parsed JSON data.
+ * @param {string} url - The path to the JSON file to load
+ * @returns {Promise<any>} - Promise resolving to the parsed JSON data
+ */
+function loadJSON(url) {
+    return fetch(url)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`Failed to load JSON from ${url}: ${response.statusText}`);
+            }
+            return response.json();
+        });
+}
+
+/**
  * @typedef {Object} LettersSides
  * @property {string[]} top - Array of 3 + letters for the top side
  * @property {string[]} right - Array of 3 + letters for the right side
@@ -70,8 +85,7 @@ class LetterBoxed {
 
     loadWords() {
         // Ensure the path is relative to the current JS file location
-        fetch('./' + this.wordsFile)
-            .then(response => response.json())
+        loadJSON('./' + this.wordsFile)
             .then(data => {
                 // Get the set of allowed letters for this game
                 const allowedLetters = new Set([
@@ -81,7 +95,7 @@ class LetterBoxed {
                     ...this.letters.left
                 ].map(l => l.toUpperCase()));
 
-                // Parallel filtering using Promise.all and chunking
+                // Get all words from the dictionary
                 const allWords = Object.keys(data);
                 const chunkSize = 2000; // Tune for best performance
                 const chunks = [];
@@ -95,7 +109,9 @@ class LetterBoxed {
                         return new Promise(resolve => {
                             const filtered = {};
                             for (const word of chunk) {
-                                const wordLetters = word.toUpperCase();
+                                // word is a string, so split into array of letters
+                                const wordLetters = word.toUpperCase().split('');
+                                // Only keep words that use only allowed letters
                                 if (wordLetters.every(letter => allowedLetters.has(letter))) {
                                     filtered[word.toUpperCase()] = data[word];
                                 }
@@ -595,9 +611,13 @@ class LetterBoxed {
         /* TODO: check if the currentWord is a valid word, load the file called filtered_words_dictionary.json
         that has keys of english words and values that are not relevant and check if the currentWord is a valid  
          */
+        console.log('checking if', this.currentWord, 'is a valid word');
+        const wordKeys = Object.keys(this.words);
+        console.log('First 10 words:', wordKeys.slice(0, 10));
+
         if (!this.words[this.currentWord]) {
             // TODO: do not alert
-            alert('Not a valid word');
+            alert(`${this.currentWord} is not a valid word`);
             return;
         }
 
