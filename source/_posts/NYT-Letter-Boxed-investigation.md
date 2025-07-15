@@ -71,5 +71,5 @@ and there are extensions and simplifications of the game that we did not conside
 
 
 
-
+The english world listI am using is from freescrabbledictionary.com https://www.freescrabbledictionary.com/word-lists/
 
