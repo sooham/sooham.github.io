@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html>
+  <!DOCTYPE html>
+<!--<html lang="en">-->
+<head>
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=Edge,chrome=1">
+  
+  <title>Range Minimum Queries and Approaches - Computer Stuff and Other Stuff</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
+  
+  <meta name="keywords" content=Algorithms,Range Minimum Queries,Trees>
+  
+    <meta name="description" content="An exploration into algorithms.">
+  
+  
+    <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico?v=1.02">
+  
+  
+    <link rel="alternate" href="/atom.xml " title="Computer Stuff and Other Stuff" type="application/atom+xml">
+  
+
+  <script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+    menuSettings: {
+      zoom: "None"
+    },
+    showMathMenu: false,
+    jax: ["input/TeX","output/CommonHTML"],
+    extensions: ["tex2jax.js"],
+    TeX: {
+      extensions: ["AMSmath.js","AMSsymbols.js"],
+      equationNumbers: {
+        autoNumber: "AMS"
+      }
+    },
+    tex2jax: {
+      inlineMath: [["\\(", "\\)"]],
+      displayMath: [["\\[", "\\]"]]
+    }
+  });
+</script>
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js"></script>
+  
+<link rel="stylesheet" href="/css/style.css">
+
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+  <body>
+    <div class="container">
+      <header class="header">
+  <div class="blog-title">
+    <a href="/" class="logo">Computer Stuff and Other Stuff</a>
+    <div class="subtitle">By Sooham Rafiz</div>
+  </div>
+  <nav class="navbar">
+    <ul class="menu">
+      
+        <li class="menu-item">
+          <a href="/" class="menu-item-link">Home</a>
+        </li>
+      
+    </ul>
+  </nav>
+</header>
+<article class="post">
+  <div class="post-title">
+    <h1 class="article-title">Range Minimum Queries and Approaches</h1>
+  </div>
+   <div class="post-meta">
+    <span class="post-time">2022-05-19</span>
+  </div>
+  <div class="post-content">
+    <p>A common problem in computer science is to query for a property over a range of contiguous elements in a given set.</p>
+<p>Examples of this problem would be</p>
+<ul>
+<li>**For array <code>$A$</code> find the minimum element between <code>$\forall i \le j \; A[i \ldots j]$</code>  **</li>
+</ul>
+<p>The difficulty in the problem is that there are <code>$O(n^2)$</code> contiguous subsets of an array.</p>
+<h1 id="Approach-1-Naive-Brute-Force-Approach"><a href="#Approach-1-Naive-Brute-Force-Approach" class="headerlink" title="Approach 1 - Naive Brute Force Approach"></a>Approach 1 - Naive Brute Force Approach</h1><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">compute_minimum_over_range</span>(<span class="params">A: <span class="type">List</span></span>):</span><br><span class="line">    n = <span class="built_in">len</span>(A)</span><br><span class="line">    range_min_query = [[<span class="number">0</span>] * n ] * n </span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(n):</span><br><span class="line">        <span class="keyword">for</span> j <span class="keyword">in</span> <span class="built_in">range</span>(i, n):</span><br><span class="line">            minimum = A[i]</span><br><span class="line">            <span class="keyword">for</span> k <span class="keyword">in</span> <span class="built_in">range</span>(i, j+<span class="number">1</span>):</span><br><span class="line">                minimum = <span class="built_in">min</span>(minimum, A[k])</span><br><span class="line">            </span><br><span class="line">            range_min_query[i][j] = minimum</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">return</span> range_min_query</span><br></pre></td></tr></table></figure>
+
+<p>The naive method iterates over every possible subarray of <code>$A$</code> and computes the minimum over the subarray. Since computing minimum over an array is linear time operation we compute:</p>
+<p><code>$\sum_&#123;k=1&#125;^&#123;n&#125; k(n-k+1) = \sum_&#123;k=1&#125;^&#123;n&#125; k(n+1)-k^2 = (n+1)\sum_&#123;k=1&#125;^&#123;n&#125; k - \sum_&#123;k=1&#125;^&#123;n&#125; k^2$</code></p>
+<p>which is in <code>$O(n^3)$</code></p>
+<h1 id="Approach-2-Dynamic-Programming"><a href="#Approach-2-Dynamic-Programming" class="headerlink" title="Approach 2 - Dynamic Programming"></a>Approach 2 - Dynamic Programming</h1><p>In the naive, brute force approach we are repeating computations which could be used for speeding up queries for larger ranges. </p>
+<p>A simple example would be for </p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">A = [1, 5, -1, 3, 4]</span><br></pre></td></tr></table></figure>
+<p>a smart approach would be to notice that <code>$A[0 \ldots 2]$</code> has smaller subproblems <code>$A[0 \ldots 1]$</code> and <code>$A[1 \ldots 2]$</code> and we can get the range_min_queryult in constant time from subproblems when we know them, like observing that:</p>
+<p><code>$\min(A[0 \ldots 2]) = \min(A[0 \ldots 1], A[1 \ldots 2])$</code></p>
+<p>instead of repeating the computation<br><code>$\min(A[0 \ldots 2]) = \min(A[0], A[1], A[2])$</code></p>
+<p>so if we save range_min_queryults to the subproblems in memory, the future superproblems will encounter can be sped up.</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">compute_minimum_over_range</span>(<span class="params">A: <span class="type">List</span></span>):</span><br><span class="line">    <span class="comment"># use dynamic programming</span></span><br><span class="line">    n = <span class="built_in">len</span>(A)</span><br><span class="line">    range_min_query = [[<span class="number">0</span>] * n] * n</span><br><span class="line"></span><br><span class="line">    <span class="comment"># start from smaller subproblems to larger ones</span></span><br><span class="line">    <span class="keyword">for</span> subproblem_size <span class="keyword">in</span> <span class="built_in">range</span>(<span class="number">1</span>, n+<span class="number">1</span>):</span><br><span class="line">        <span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(n):</span><br><span class="line">            j = i + subproblem_size - <span class="number">1</span></span><br><span class="line"></span><br><span class="line">            <span class="keyword">if</span> subproblem_size == <span class="number">1</span>:</span><br><span class="line">                <span class="comment"># base case, minimum of one element is itself </span></span><br><span class="line">                range_min_query[i][j] = A[i]</span><br><span class="line">            <span class="keyword">else</span>:</span><br><span class="line">                range_min_query[i][j] = <span class="built_in">min</span>(range_min_query[i][j-<span class="number">1</span>], range_min_query[i+<span class="number">1</span>][j])</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">return</span> range_min_query</span><br></pre></td></tr></table></figure>
+
+<p>At the cost of using <code>$O(n^2)$</code> space we have sped up our algorithm to <code>$O(n^2)$</code> time.</p>
+<p>A query for a specific range <code>$i \ldots j$</code> we can get the query range_min_queryult in constant time by performing a look up on the range_min_queryult of <code>compute_minimum_over_range</code> dynamic programming table.</p>
+<h1 id="Approach-3-Using-Powers-of-Two-optimization"><a href="#Approach-3-Using-Powers-of-Two-optimization" class="headerlink" title="Approach 3 - Using Powers of Two optimization"></a>Approach 3 - Using Powers of Two optimization</h1><p>A optimization of the above dynamic programming approach is to exploit the fact that the <code>$\min$</code> operation over sets does not care about ovelaps.</p>
+<p>For any set <code>$A$</code>, <code>$\min(A \cup B) = \min(A)$</code> where <code>$B \subseteq A$</code>.</p>
+<p>We can optimize by not computing our range minimum query table <code>$RMQ$</code> for every subset size, instead using a sensible scheme such as powers of two. This can be a recurrence relation <code>$A[i\ldots i+2^k-1]$</code> where <code>$i$</code> is the position and <code>$k$</code> is the power of two we want to query over.</p>
+<p><code>$ RMQ_A(i, k) = \left\&#123;\begin&#123;array&#125;&#123;ll&#125; A[i] &amp; k == 0 \\ RMQ(i,k-1) &amp; RMQ(i,k-1) \le RMQ(i+2^&#123;k-1&#125;, k-1) \\ RMQ(i+2^&#123;k-1&#125;, k-1) &amp; RMQ(i,k-1) \gt RMQ(i+2^&#123;k-1&#125;, k-1)\end&#123;array&#125;\right\&#125;$</code></p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">compute_minimum_over_range</span>(<span class="params">A: <span class="type">List</span></span>):</span><br><span class="line">    n = <span class="built_in">len</span>(A)</span><br><span class="line">    K = ceil(log2(n))</span><br><span class="line">    range_min_query = [[<span class="number">0</span>] * n ] * K </span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> k <span class="keyword">in</span> <span class="built_in">range</span>(K):</span><br><span class="line">        <span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(n):</span><br><span class="line">            <span class="keyword">if</span> k == <span class="number">0</span>:</span><br><span class="line">                range_min_query[k][i] = A[i]</span><br><span class="line">                <span class="keyword">continue</span></span><br><span class="line"></span><br><span class="line">            L = range_min_query[k-<span class="number">1</span>][i]</span><br><span class="line">            U = range_min_query[k-<span class="number">1</span>][i + <span class="number">1</span>&lt;&lt;(k-<span class="number">1</span>)]</span><br><span class="line"></span><br><span class="line">            range_min_query[k][i] = <span class="built_in">min</span>(L, U)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> range_min_query</span><br></pre></td></tr></table></figure>
+
+<p>This reduces the range minimum query computation table to <code>$O(n\log(n))$</code></p>
+<h1 id="Further-Approaches"><a href="#Further-Approaches" class="headerlink" title="Further Approaches"></a>Further Approaches</h1><p>It is possible to do better than <code>$O(n\log(n))$</code> time and <code>$O(1)$</code> lookup time for range minimum queries. In fact, it is possible to do <code>$O(n)$</code> preprocessing and <code>$O(1)$</code> lookup through multiple clever data structures I will discuss in the future. </p>
+
+  </div>
+  <div class="post-footer">
+    
+      <ul class="post-tag-list" itemprop="keywords"><li class="post-tag-list-item"><a class="post-tag-list-link" href="/tags/Algorithms/" rel="tag">Algorithms</a></li><li class="post-tag-list-item"><a class="post-tag-list-link" href="/tags/Range-Minimum-Queries/" rel="tag">Range Minimum Queries</a></li><li class="post-tag-list-item"><a class="post-tag-list-link" href="/tags/Trees/" rel="tag">Trees</a></li></ul>
+    
+
+    <a href="#top" class="top">Back to Top</a>
+  </div>
+</article>
+<footer>
+  &copy; 2025
+  <span class="author">
+    Sooham Rafiz
+  </span>
+</footer>
+    </div>
+  </body>
+</html>
