@@ -65,7 +65,7 @@ Here the **optimality** can be the following measure
 
 and there are extensions and simplifications of the game that we did not consider
 - what if we used a N-sided shape instead of square?
-- Given a seet of words, can a Letter Boxed be created?
+- Given a set of words, can a Letter Boxed be created?
 - What if we used a K dimensional Letter Cube? 
 - What if we have arbitrary N letters per side?
 
