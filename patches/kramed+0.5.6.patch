@@ -1,0 +1,15 @@
+diff --git a/node_modules/kramed/lib/rules/inline.js b/node_modules/kramed/lib/rules/inline.js
+index 1d2fb57..7442837 100644
+--- a/node_modules/kramed/lib/rules/inline.js
++++ b/node_modules/kramed/lib/rules/inline.js
+@@ -16,8 +16,8 @@ var inline = {
+   reflink: /^!?\[(inside)\]\s*\[([^\]]*)\]/,
+   nolink: /^!?\[((?:\[[^\]]*\]|[^\[\]])*)\]/,
+   reffn: /^!?\[\^(inside)\]/,
+-  strong: /^__([\s\S]+?)__(?!_)|^\*\*([\s\S]+?)\*\*(?!\*)/,
+-  em: /^\b_((?:__|[\s\S])+?)_\b|^\*((?:\*\*|[\s\S])+?)\*(?!\*)/,
++  strong: /^\*\*([\s\S]+?)\*\*(?!\*)/,
++  em: /^\*((?:\*\*|[\s\S])+?)\*(?!\*)/,
+   code: /^(`+)\s*([\s\S]*?[^`])\s*\1(?!`)/,
+   br: /^ {2,}\n(?!\s*$)/,
+   del: noop,
