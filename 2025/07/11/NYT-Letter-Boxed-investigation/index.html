@@ -26,21 +26,29 @@
       zoom: "None"
     },
     showMathMenu: false,
-    jax: ["input/TeX","output/CommonHTML"],
+    jax: ["input/TeX","output/HTML-CSS"],
     extensions: ["tex2jax.js"],
     TeX: {
-      extensions: ["AMSmath.js","AMSsymbols.js"],
+      extensions: ["AMSmath.js","AMSsymbols.js","color.js"],
       equationNumbers: {
         autoNumber: "AMS"
       }
     },
+    "HTML-CSS": {
+      availableFonts: ["TeX"],
+      preferredFont: "TeX",
+      webFont: "TeX",
+      imageFont: null
+    },
     tex2jax: {
-      inlineMath: [["\\(", "\\)"]],
-      displayMath: [["\\[", "\\]"]]
+      inlineMath: [["\\(", "\\)"], ["$", "$"]],
+      displayMath: [["\\[", "\\]"], ["$$", "$$"]],
+      processEscapes: true,
+      processEnvironments: true
     }
   });
 </script>
-<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js"></script>
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-MML-AM_CHTML"></script>
   
 <link rel="stylesheet" href="/css/style.css">
 
@@ -71,12 +79,12 @@
     <span class="post-time">2025-07-11</span>
   </div>
   <div class="post-content">
-    <h1 id="From-Browsing-to-Algorithmic-Play"><a href="#From-Browsing-to-Algorithmic-Play" class="headerlink" title="From Browsing to Algorithmic Play"></a>From Browsing to Algorithmic Play</h1><p>Recently I binged the <a href="https://www.nytimes.com/crosswords" target="_blank" rel="noopener"><em>New York Times</em> games</a> section library of games. I did a month of <em>Wordles</em>, a number of <em>sudokus</em>  till I found myself rather bored. Then out of sheer curiousity, I started playing the NYT’s <em>Letter Boxed</em>.</p>
+    <h1 id="From-Browsing-to-Algorithmic-Play"><a href="#From-Browsing-to-Algorithmic-Play" class="headerlink" title="From Browsing to Algorithmic Play"></a>From Browsing to Algorithmic Play</h1><p>Recently I binged the <a target="_blank" rel="noopener" href="https://www.nytimes.com/crosswords">_New York Times_ games</a> section library of games. I did a month of _Wordles_, a number of _sudokus_  till I found myself rather bored. Then out of sheer curiousity, I started playing the NYT&#39;s _Letter Boxed_.</p>
 <p align="center">
   <img src="/2025/07/11/NYT-Letter-Boxed-investigation/letter_boxed_main_page.png" alt="NYT Letter Boxed Main Page" style="max-width:250px; height:auto; width:100%;">
 </p>
 
-<h2 id="Rules-of-Letter-Boxed"><a href="#Rules-of-Letter-Boxed" class="headerlink" title="Rules of Letter Boxed"></a>Rules of Letter Boxed</h2><p>Like most games presented by the NYT, Letter Boxed and its rules are simple, simple enough  that you can play the game on a piece of paper and do not need any feedback from the computer after every turn like <em>Wordle</em>. There is no hidden information here to uncover.</p>
+<h2 id="Rules-of-Letter-Boxed"><a href="#Rules-of-Letter-Boxed" class="headerlink" title="Rules of Letter Boxed"></a>Rules of Letter Boxed</h2><p>Like most games presented by the NYT, Letter Boxed and its rules are simple, simple enough  that you can play the game on a piece of paper and do not need any feedback from the computer after every turn like _Wordle_. There is no hidden information here to uncover.</p>
 <ul>
 <li>You have a list of valid words from a dictionary, and you are given a square with 3 letters on each side, total of 12 letters.</li>
 </ul>
@@ -85,16 +93,13 @@
 </p>
 
 <ul>
-<li><p>Starting from any letter, connect letters from to form a word in the dictionary.</p>
-</li>
-<li><p>Consecutive letters cannot be from the same side. So EAT is not allowed</p>
-</li>
+<li>Starting from any letter, connect letters from to form a word in the dictionary.</li>
+<li>Consecutive letters cannot be from the same side. So EAT is not allowed</li>
 <li><p>Your next starting letter is last letter of the word you connected. BET &gt; TUB &gt; BAT</p>
 </li>
 <li><p>You must visit all the letters in the square at least once.</p>
 </li>
-<li><p>Each word must be at least 3 letters long.</p>
-</li>
+<li>Each word must be at least 3 letters long.</li>
 </ul>
 <p>Objective is to find a path that meets all the above.</p>
 <div align="center" style="display: flex; justify-content: center; gap: 20px;">
@@ -112,7 +117,7 @@
   </div>
 </div>
 
-<h3 id="Try-playing-a-game-for-yourself"><a href="#Try-playing-a-game-for-yourself" class="headerlink" title="Try playing a game for yourself!"></a>Try playing a game for yourself!</h3><div class="letter-boxed-game-main"></div>
+<h3 id="Try-playing-a-game-for-yourself"><a href="#Try-playing-a-game-for-yourself" class="headerlink" title="Try playing a game for yourself!"></a>Try playing a game for yourself!</h3><p><div class="letter-boxed-game-main"></div></p>
 <script src="/2025/07/11/NYT-Letter-Boxed-investigation/letterboxed.js"></script>
 
 <h2 id="How-can-we-find-a-solution-for-Letter-Boxed"><a href="#How-can-we-find-a-solution-for-Letter-Boxed" class="headerlink" title="How can we find a solution for Letter Boxed?"></a>How can we find a solution for Letter Boxed?</h2><p>I found this game great because <em>Letter Boxed</em> is not a game traditionally analyzed through the lens of data structures and algorithms -  while <em>Sudoku</em> easilly fits into the mold of normal CSP problems, <em>Wordle</em> fits nicely with the concept of information gain and entropy. Letter Boxed is a bit unclear to solve, but can see how the traditional concepts of graphs and search can be used to pry out an <strong>optimal</strong> solution.</p>
@@ -128,7 +133,7 @@
 <li>What if we used a K dimensional Letter Cube? </li>
 <li>What if we have arbitrary N letters per side?</li>
 </ul>
-<p>The english world listI am using is from freescrabbledictionary.com <a href="https://www.freescrabbledictionary.com/word-lists/" target="_blank" rel="noopener">https://www.freescrabbledictionary.com/word-lists/</a></p>
+<p>The english world listI am using is from freescrabbledictionary.com <a target="_blank" rel="noopener" href="https://www.freescrabbledictionary.com/word-lists/">https://www.freescrabbledictionary.com/word-lists/</a></p>
 
   </div>
   <div class="post-footer">

@@ -26,21 +26,29 @@
       zoom: "None"
     },
     showMathMenu: false,
-    jax: ["input/TeX","output/CommonHTML"],
+    jax: ["input/TeX","output/HTML-CSS"],
     extensions: ["tex2jax.js"],
     TeX: {
-      extensions: ["AMSmath.js","AMSsymbols.js"],
+      extensions: ["AMSmath.js","AMSsymbols.js","color.js"],
       equationNumbers: {
         autoNumber: "AMS"
       }
     },
+    "HTML-CSS": {
+      availableFonts: ["TeX"],
+      preferredFont: "TeX",
+      webFont: "TeX",
+      imageFont: null
+    },
     tex2jax: {
-      inlineMath: [["\\(", "\\)"]],
-      displayMath: [["\\[", "\\]"]]
+      inlineMath: [["\\(", "\\)"], ["$", "$"]],
+      displayMath: [["\\[", "\\]"], ["$$", "$$"]],
+      processEscapes: true,
+      processEnvironments: true
     }
   });
 </script>
-<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js"></script>
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-MML-AM_CHTML"></script>
   
 <link rel="stylesheet" href="/css/style.css">
 
@@ -66,6 +74,11 @@
 <section class="archive">
   <h1 class="article-title">Posts</h1>
   <ul class="post-archive">
+    
+      <li class="post-item">
+        <a class="post-title" href="/2025/10/13/Introduction-to-denoising-diffusion-models-part-1/">Diffusion modelling on fashion datasets</a>
+        <time class="post-date">2025-10-13</time>
+      </li>
     
       <li class="post-item">
         <a class="post-title" href="/2025/07/11/NYT-Letter-Boxed-investigation/">Solving the The New York Times Letter Boxed</a>

@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html>
+  <!DOCTYPE html>
+<!--<html lang="en">-->
+<head>
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=Edge,chrome=1">
+  
+  <title>Diffusion modelling on fashion datasets - Computer Stuff and Other Stuff</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
+  
+  <meta name="keywords" content=Variational Inference,Statistics,Diffusion>
+  
+    <meta name="description" content="An exploration into algorithms.">
+  
+  
+    <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico?v=1.02">
+  
+  
+    <link rel="alternate" href="/atom.xml " title="Computer Stuff and Other Stuff" type="application/atom+xml">
+  
+
+  <script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+    menuSettings: {
+      zoom: "None"
+    },
+    showMathMenu: false,
+    jax: ["input/TeX","output/HTML-CSS"],
+    extensions: ["tex2jax.js"],
+    TeX: {
+      extensions: ["AMSmath.js","AMSsymbols.js","color.js"],
+      equationNumbers: {
+        autoNumber: "AMS"
+      }
+    },
+    "HTML-CSS": {
+      availableFonts: ["TeX"],
+      preferredFont: "TeX",
+      webFont: "TeX",
+      imageFont: null
+    },
+    tex2jax: {
+      inlineMath: [["\\(", "\\)"], ["$", "$"]],
+      displayMath: [["\\[", "\\]"], ["$$", "$$"]],
+      processEscapes: true,
+      processEnvironments: true
+    }
+  });
+</script>
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-MML-AM_CHTML"></script>
+  
+<link rel="stylesheet" href="/css/style.css">
+
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+  <body>
+    <div class="container">
+      <header class="header">
+  <div class="blog-title">
+    <a href="/" class="logo">Computer Stuff and Other Stuff</a>
+    <div class="subtitle">By Sooham Rafiz</div>
+  </div>
+  <nav class="navbar">
+    <ul class="menu">
+      
+        <li class="menu-item">
+          <a href="/" class="menu-item-link">Home</a>
+        </li>
+      
+    </ul>
+  </nav>
+</header>
+<article class="post">
+  <div class="post-title">
+    <h1 class="article-title">Diffusion modelling on fashion datasets</h1>
+  </div>
+   <div class="post-meta">
+    <span class="post-time">2025-10-13</span>
+  </div>
+  <div class="post-content">
+    <h1 id="Part-1-Variational-Inference"><a href="#Part-1-Variational-Inference" class="headerlink" title="Part 1: Variational Inference"></a>Part 1: Variational Inference</h1><p>In most environments, we are not able to observe all the states at play. For example, in poker, we do not see our opponent&#39;s hand, but we can observe their behavior. A statistician observing crop yields across a state cannot observe every farm for blight and disease, but the crop yields themselves can indicate the extent of any disease. Commonly, we say such situations have an observed variable $X$ and a hidden variable $Z$, where $Z$ can influence $X$, but $X$ does not influence $Z$.</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th></th>
+<th>$X$ (Observed)</th>
+<th>$Z$ (Hidden)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Description</strong></td>
+<td>The variable we can directly measure or see</td>
+<td>The underlying variable we cannot directly observe</td>
+</tr>
+<tr>
+<td><strong>Example 1</strong></td>
+<td>Wine taste and quality ratings</td>
+<td>Vineyard location</td>
+</tr>
+<tr>
+<td><strong>Example 2</strong></td>
+<td>Crop yields across farms</td>
+<td>Presence of blight and disease</td>
+</tr>
+<tr>
+<td><strong>Example 3</strong></td>
+<td>Patient lab reports</td>
+<td>Underlying disease state</td>
+</tr>
+<tr>
+<td><strong>Example 4</strong></td>
+<td>Facial expressions and body language</td>
+<td>Underlying emotions</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>We say the variable $Z$ is the <strong>latent</strong> variable and $X$ is the <strong>observed</strong> variable.</p>
+<p align="center">
+  <img src="/2025/10/13/Introduction-to-denoising-diffusion-models-part-1/latent_plate_notation.png" style="max-width:10%; height:auto; width:10%;">
+</p>
+
+<p align="center" style="margin-top: 10px; font-style: italic; color: #666;">
+  <strong>Figure 1:</strong> Plate notation showing the relationship between latent variable $Z$ and observed variable $X$. The arrow from $Z$ to $X$ indicates that the hidden variable $Z$ influences the observed variable $X$, but not vice versa.
+</p>
+
+<p>Usually we know the likelihood of $X$ when we know $Z$, denoted $p(x\mid z)$. For instance, it is easy to predict laboratory reports of a sick patient if we know how far their disease has progressed. With Bayes&#39;s rule, we have a pathway to compute the posterior—the disease progression given the lab report—i.e., the latent variable given the observed variable:</p>
+<script type="math/tex; mode=display">p(z \mid x) = \dfrac{p(x \mid z)p(z)}{\int p(z, x) \, dz}</script><p>However, the integral in the denominator is usually intractable for most problems.</p>
+<hr>
+<h2 id="Illustration-of-Complexity-When-Computing-the-Denominator"><a href="#Illustration-of-Complexity-When-Computing-the-Denominator" class="headerlink" title="Illustration of Complexity When Computing the Denominator"></a>Illustration of Complexity When Computing the Denominator</h2><p>Assume you are a retail company that wants to understand consumer total spending behavior. You model your consumers as belonging to one of three categories:</p>
+<ul>
+<li>Category 1: Low spenders — $\mathcal{N}(\mu_1, \sigma^2)$ </li>
+<li>Category 2: Medium spenders — $\mathcal{N}(\mu_2, \sigma^2)$</li>
+<li>Category 3: High spenders — $\mathcal{N}(\mu_3, \sigma^2)$</li>
+</ul>
+<p>When the company plotted their customer lifetime spend as a histogram, the peaks on the curve matched their hypothesis.</p>
+<p align="center">
+  <img src="/2025/10/13/Introduction-to-denoising-diffusion-models-part-1/mixture_illustration.png" style="max-width:90%; height:auto; width:90%;">
+</p>
+
+<p>The company can look at invoices and purchase logs to see observed total spend datapoints $\boldsymbol{x} = (x_1, \ldots, x_n)$. We don&#39;t know which category $z_i$ customer $x_i$ belongs to. We also don&#39;t know the means $\mu_k$, $k \in {1,2,3}$ for the categories, but we assume the means are normally distributed: $\color{red}{\mu_k \sim \mathcal{N}(m_0, s_0^2)}$.</p>
+<p>We assume the probability for each category is $\color{orange}{\boldsymbol{\pi} = (\pi_1, \pi_2, \pi_3) \sim \text{Dirichlet}(\boldsymbol{\alpha})}$.</p>
+<p>The category chosen for sample $x_i$ is $\color{purple}{z_i \sim \text{Categorical}(\boldsymbol{\pi})}$.</p>
+<p>So, the likelihood for each spending amount $x_i$ given a specific category $z_i$ is: </p>
+<script type="math/tex; mode=display">\color{blue}{p(x_i \mid z_i = k, \mu_k, \sigma^2) = \mathcal{N}(x_i \mid \mu_k, \sigma^2)}</script><p>The marginal for $x_i$ over all possible categories $Z_i$:</p>
+<script type="math/tex; mode=display">\color{blue}{p(x_i \mid \mu_{1:3}, \sigma^2, \boldsymbol{\pi}) = \sum_{k=1}^3 \pi_k\mathcal{N}(x_i \mid \mu_k, \sigma^2)}</script><p>We want to find the posterior $p(\boldsymbol{z}, \boldsymbol{\pi}, \boldsymbol{\mu} \mid \boldsymbol{x})$, which is: </p>
+<script type="math/tex; mode=display">p(\boldsymbol{z}, \boldsymbol{\pi}, \boldsymbol{\mu} \mid \boldsymbol{x}) = \dfrac{\color{blue}{p(\boldsymbol{x} \mid \boldsymbol{z}, \boldsymbol{\mu})}\color{purple}{p(\boldsymbol{z} \mid \boldsymbol{\pi})}\color{orange}{p(\boldsymbol{\pi})}\color{red}{p(\boldsymbol{\mu})}}{p(\boldsymbol{x})}</script><p>where the denominator $p(\boldsymbol{x})$ is the marginal likelihood, which requires integrating over all possible values of the latent variables and parameters:</p>
+<script type="math/tex; mode=display">p(\boldsymbol{x}) = \int_{\boldsymbol{\pi}} \color{orange}{p(\boldsymbol{\pi})} \color{black}{\sum_{\boldsymbol{z}}} \color{purple}{p(\boldsymbol{z} \mid \boldsymbol{\pi})} \color{black}{\int_{\boldsymbol{\mu}}} \color{red}{p(\boldsymbol{\mu})} \color{blue}{p(\boldsymbol{x} \mid \boldsymbol{z}, \boldsymbol{\mu})} d\boldsymbol{\mu} \, d\boldsymbol{\pi}</script><p>This integral is intractable because we must sum over all $3^n$ possible category assignments for $\boldsymbol{z}$ and integrate over the continuous spaces of $\boldsymbol{\mu}$ and $\boldsymbol{\pi}$.</p>
+<p>Since we do not know the exact closed form equation to infer the posterior, we approximate $p(\boldsymbol{z}, \boldsymbol{\pi}, \boldsymbol{\mu} \mid \boldsymbol{x})$ with a function family that we know.</p>
+<p align="center">
+  <img src="/2025/10/13/Introduction-to-denoising-diffusion-models-part-1/full_plate_diagram.png" style="max-width:500px; height:auto; width:42%;">
+</p>
+
+<hr>
+<h1 id="Variational-Inference-on-the-Customer-Spending-Model"><a href="#Variational-Inference-on-the-Customer-Spending-Model" class="headerlink" title="Variational Inference on the Customer Spending Model"></a>Variational Inference on the Customer Spending Model</h1><p>We don&#39;t know the posterior $p(\boldsymbol{z}, \boldsymbol{\pi}, \boldsymbol{\mu} \mid \boldsymbol{x})$, so let&#39;s define $q(\boldsymbol{z}, \boldsymbol{\pi}, \boldsymbol{\mu} \mid \boldsymbol{x})$ that we can use to approximate it. We will determine how &quot;good&quot; the approximation is with a divergence metric - KL divergence.</p>
+<h2 id="Kullback-Leibler-KL-divergence"><a href="#Kullback-Leibler-KL-divergence" class="headerlink" title="Kullback-Leibler (KL) divergence"></a>Kullback-Leibler (KL) divergence</h2><p>The Kullback-Leibler (KL) divergence is a way of measuring closeness between the approximator $q$ and its target $p$</p>
+<script type="math/tex; mode=display">\text{KL}(q \parallel p) = \mathbb{E}_q \left[ \log \frac{q(\boldsymbol{z}, \boldsymbol{\pi}, \boldsymbol{\mu})}{p(\boldsymbol{z}, \boldsymbol{\pi}, \boldsymbol{\mu} \mid \boldsymbol{x})} \right]</script><p>If $q$ is the same as $p$ everywhere, then $D_{KL}(q \parallel p) = 0$.<br>However, the issue is that we must know $p(\boldsymbol{z}, \boldsymbol{\pi}, \boldsymbol{\mu} \mid \boldsymbol{x})$ to compute this term. We can derive a more tractable objective by manipulating the KL divergence:</p>
+<script type="math/tex; mode=display">\text{KL}(q \parallel p) = \mathbb{E}_q \left[ \log \frac{q(\boldsymbol{z}, \boldsymbol{\pi}, \boldsymbol{\mu})}{p(\boldsymbol{z}, \boldsymbol{\pi}, \boldsymbol{\mu} \mid \boldsymbol{x})} \right]</script><script type="math/tex; mode=display">= \mathbb{E}_q \left[ \log q(\boldsymbol{z}, \boldsymbol{\pi}, \boldsymbol{\mu}) - \log \frac{p(\boldsymbol{x}, \boldsymbol{z}, \boldsymbol{\pi}, \boldsymbol{\mu})}{p(\boldsymbol{x})} \right]</script><script type="math/tex; mode=display">= \mathbb{E}_q \left[ \log q(\boldsymbol{z}, \boldsymbol{\pi}, \boldsymbol{\mu}) - \log p(\boldsymbol{x}, \boldsymbol{z}, \boldsymbol{\pi}, \boldsymbol{\mu}) \right] + \log p(\boldsymbol{x})</script><p>Rearranging:</p>
+<script type="math/tex; mode=display">\log p(\boldsymbol{x}) = \text{KL}(q \parallel p) + \mathbb{E}_q \left[ \log p(\boldsymbol{x}, \boldsymbol{z}, \boldsymbol{\pi}, \boldsymbol{\mu}) - \log q(\boldsymbol{z}, \boldsymbol{\pi}, \boldsymbol{\mu}) \right]</script><p>Since KL divergence is always non-negative, we have:</p>
+<script type="math/tex; mode=display">\begin{align}
+\log p(\boldsymbol{x}) &\geq \mathbb{E}_q \left[ \log p(\boldsymbol{x}, \boldsymbol{z}, \boldsymbol{\pi}, \boldsymbol{\mu}) \right. \\
+&\quad \left. - \log q(\boldsymbol{z}, \boldsymbol{\pi}, \boldsymbol{\mu}) \right]
+\end{align}</script><p>The right-hand side is called the <strong>Evidence Lower Bound (ELBO)</strong>:</p>
+<script type="math/tex; mode=display">\begin{align}
+\text{ELBO}(q) &= \mathbb{E}_{\boldsymbol{z}, \boldsymbol{\mu}, \boldsymbol{\pi} \sim q} \left[ \log p(\boldsymbol{x}, \boldsymbol{z}, \boldsymbol{\pi}, \boldsymbol{\mu}) \right. \\
+&\quad \left. - \log q(\boldsymbol{z}, \boldsymbol{\pi}, \boldsymbol{\mu}) \right]
+\end{align}</script><p>Maximizing the ELBO with respect to $q$ is equivalent to minimizing $\text{KL}(q \parallel p)$, which makes $q$ a better approximation to the true posterior.</p>
+<h1 id="Choosing-a-variational-function-family"><a href="#Choosing-a-variational-function-family" class="headerlink" title="Choosing a variational function family"></a>Choosing a variational function family</h1><p>Let&#39;s choose a function for $q$, we can assume that $q(\boldsymbol{z}, \boldsymbol{\pi}, \boldsymbol{\mu}) = q(\boldsymbol{z}) q(\boldsymbol{\pi}) q(\boldsymbol{\mu})$, or that the parameters for each variable are independent of each other.</p>
+<p><strong>Category assignments:</strong> </p>
+<script type="math/tex; mode=display">q(\boldsymbol{z}) = \prod_{i=1}^{n} q(z_i) = \prod_{i=1}^{n} \text{Categorical}(z_i \mid \boldsymbol{\phi}_i) = \prod_{i=1}^{n} \sum_{k=1}^{3} \phi_{ik} \mathbb{1}[z_i = k]</script><p>where $z_i \in {1, 2, 3}$ is the category assignment for customer $i$, and $\boldsymbol{\phi}_i = (\phi_{i1}, \phi_{i2}, \phi_{i3})$ are the variational parameters defining the categorical distribution. Specifically, $\phi_{ik} = q(z_i = k)$ represents the probability that customer $i$ belongs to category $k$.</p>
+<p><strong>Category probabilities:</strong><br>We can assume that $\pi$ has a prior from the dirichlet distribution, starting from a uniform initalization</p>
+<script type="math/tex; mode=display">q(\boldsymbol{\pi}) = \text{Dirichlet}(\boldsymbol{\pi} \mid \boldsymbol{\alpha}') = \frac{\Gamma(\sum_{k=1}^{3} \alpha_k')}{\prod_{k=1}^{3} \Gamma(\alpha_k')} \prod_{k=1}^{3} \pi_k^{\alpha_k' - 1}</script><p>where $\boldsymbol{\alpha}&#39; = (1, 1, 1)$ for a uniform initialization</p>
+<p><strong>Category means:</strong> </p>
+<script type="math/tex; mode=display">q(\boldsymbol{\mu}) = \prod_{k=1}^{3} \mathcal{N}(\mu_k \mid m_k', s_k'^2)</script><p>Variational parameters $(m_k&#39;, s_k&#39;^2)$ for each category $k$</p>
+<p>The ELBO then is </p>
+<script type="math/tex; mode=display">
+\text{ELBO}(q) = \mathbb{E}_{\boldsymbol{z}, \boldsymbol{\mu}, \boldsymbol{\pi} \sim q} \left[ \color{orange}{\log p(\boldsymbol{x}, \boldsymbol{z}, \boldsymbol{\pi}, \boldsymbol{\mu})} \right.  \left. - \color{green}{\log q(\boldsymbol{z}, \boldsymbol{\pi}, \boldsymbol{\mu})} \right]</script><script type="math/tex; mode=display">
+\text{ELBO}(q) = \mathbb{E}_{\boldsymbol{z}, \boldsymbol{\mu}, \boldsymbol{\pi} \sim q} \left[ \color{orange}{\log p(\boldsymbol{x}, \boldsymbol{z}, \boldsymbol{\pi}, \boldsymbol{\mu})} \right] - \mathbb{E}_{\boldsymbol{z}, \boldsymbol{\mu}, \boldsymbol{\pi} \sim q} \left[ \color{green}{\log q(\boldsymbol{z}, \boldsymbol{\pi}, \boldsymbol{\mu})} \right]</script><script type="math/tex; mode=display">
+\text{ELBO}(q) = \mathbb{E}_q \left[ \color{blue}{
+\log p(\boldsymbol{x} \mid \boldsymbol{z}, \boldsymbol{\mu})} \right] + \mathbb{E}_q \left[ \color{purple}{\log p(\boldsymbol{z} \mid \boldsymbol{\pi})} \right] + \mathbb{E}_q \left[ \color{orange}{\log p(\boldsymbol{\pi})} \right] + \mathbb{E}_q \left[ \color{red}{\log p(\boldsymbol{\mu})} \right] - \mathbb{E}_q \left[ \color{green}{\log q(\boldsymbol{z})} \right] - \mathbb{E}_q \left[ \color{teal}{\log q(\boldsymbol{\pi})} \right] - \mathbb{E}_q \left[ \color{brown}{\log q(\boldsymbol{\mu})} \right]</script><script type="math/tex; mode=display">
+\text{ELBO}(q) = \mathbb{E}_{z_i} \left[ \color{blue}{\sum_{i=1}^n \log \mathcal{N}(x_i \mid \mu_{z_i}, \sigma^2)} \right] + \mathbb{E}_{z_i} \left[ \color{purple}{\sum_{i=1}^n \log \pi_{z_i}} \right] + \mathbb{E}_{\boldsymbol{\pi}} \left[ \color{orange}{\log \left( \frac{\Gamma(\sum_{k=1}^{3} \alpha_k)}{\prod_{k=1}^{3} \Gamma(\alpha_k)} \prod_{k=1}^{3} \pi_k^{\alpha_k - 1} \right)} \right] + \mathbb{E}_{\mu_k} \left[ \color{red}{\sum_{k=1}^3 \log \mathcal{N}(\mu_k \mid m_0, s_0^2)} \right] - \mathbb{E}_{z_i} \left[ \color{green}{\sum_{i=1}^n \log q(z_i)} \right] - \mathbb{E}_{\boldsymbol{\pi}} \left[ \color{teal}{\log \left( \frac{\Gamma(\sum_{k=1}^{3} \alpha_k')}{\prod_{k=1}^{3} \Gamma(\alpha_k')} \prod_{k=1}^{3} \pi_k^{\alpha_k' - 1} \right)} \right] - \mathbb{E}_{\mu_k} \left[ \color{brown}{\sum_{k=1}^3 \log \mathcal{N}(\mu_k \mid m_k', s_k'^2)} \right]</script><script type="math/tex; mode=display">
+\text{ELBO}(q) = \color{blue}{\sum_{i=1}^n \mathbb{E}_{z_i} \left[ \log \mathcal{N}(x_i \mid \mu_{z_i}, \sigma^2) \right]} + \color{purple}{\sum_{i=1}^n \mathbb{E}_{z_i} \left[ \log \pi_{z_i} \right]} + \mathbb{E}_{\boldsymbol{\pi}} \left[ \color{orange}{\log \left( \frac{\Gamma(\sum_{k=1}^{3} \alpha_k)}{\prod_{k=1}^{3} \Gamma(\alpha_k)} \prod_{k=1}^{3} \pi_k^{\alpha_k - 1} \right)} \right] + \color{red}{\sum_{k=1}^3 \mathbb{E}_{\mu_k} \left[ \log \mathcal{N}(\mu_k \mid m_0, s_0^2) \right]} - \color{green}{\sum_{i=1}^n \mathbb{E}_{z_i} \left[ \log q(z_i) \right]} - \mathbb{E}_{\boldsymbol{\pi}} \left[ \color{teal}{\log \left( \frac{\Gamma(\sum_{k=1}^{3} \alpha_k')}{\prod_{k=1}^{3} \Gamma(\alpha_k')} \prod_{k=1}^{3} \pi_k^{\alpha_k' - 1} \right)} \right] - \color{brown}{\sum_{k=1}^3 \mathbb{E}_{\mu_k} \left[ \log \mathcal{N}(\mu_k \mid m_k', s_k'^2) \right]}</script><p>The end objective is to maximize the ELBO equation above.</p>
+<h1 id="Implementing-Stochastic-Variational-Inference-into-code"><a href="#Implementing-Stochastic-Variational-Inference-into-code" class="headerlink" title="Implementing Stochastic Variational Inference into code"></a>Implementing Stochastic Variational Inference into code</h1><p>To recap, we are now solving an optimization problem where<br><strong>Data</strong>: $N$ samples $x_i$ from customer spending data<br><strong>Model</strong>: </p>
+<script type="math/tex; mode=display">q(\boldsymbol{z}, \boldsymbol{\pi}, \boldsymbol{\mu}) = q(\boldsymbol{z})q(\boldsymbol{\pi})q(\boldsymbol{\mu})</script><script type="math/tex; mode=display">= \left[\prod_{i=1}^{n} \text{Categorical}(z_i \mid \boldsymbol{\phi}_i)\right] \times \text{Dirichlet}(\boldsymbol{\pi} \mid \boldsymbol{\alpha}') \times \left[\prod_{k=1}^{3} \mathcal{N}(\mu_k \mid m_k', s_k'^2)\right]</script><p><strong>Variational Parameters to Optimize</strong>:</p>
+<ul>
+<li>$\boldsymbol{\phi}_i = (\phi_{i1}, \phi_{i2}, \phi_{i3})$ for each customer $i$: The probability that customer $i$ belongs to each of the three spending categories</li>
+<li>$\boldsymbol{\alpha}&#39; = (\alpha_1&#39;, \alpha_2&#39;, \alpha_3&#39;)$: Parameters of the Dirichlet distribution for category probabilities $\boldsymbol{\pi}$</li>
+<li>$(m_k&#39;, s_k&#39;^2)$ for $k \in {1,2,3}$: Mean and variance parameters for the Gaussian distribution of each category mean $\mu_k$</li>
+</ul>
+<p><strong>Objective</strong>: Maximize ELBO with respect to these variational parameters</p>
+<p>The optimization proceeds using <strong>stochastic variational inference (SVI)</strong>, where we use mini-batches of data to compute noisy but unbiased estimates of the gradient. At each iteration, we:</p>
+<ol>
+<li>Sample a mini-batch of customers</li>
+<li>Update $\boldsymbol{\phi}$ for the mini-batch</li>
+<li>Scale the batch statistics by $N/\text{batch_size}$ to get unbiased estimates</li>
+<li>Update global parameters $\boldsymbol{\alpha}&#39;$ and $(\boldsymbol{m}&#39;, \boldsymbol{s}&#39;^2)$ using these scaled estimates</li>
+</ol>
+<p>This stochastic approach allows us to scale to large datasets without needing to process all data points at each iteration.</p>
+<h3 id="Writing-code-for-ELBO-computation"><a href="#Writing-code-for-ELBO-computation" class="headerlink" title="Writing code for ELBO computation"></a>Writing code for ELBO computation</h3><p>As seen, the ELBO is the sum of seven terms - we will simplify them out enough to write into code and their derivatives too.</p>
+<p><em>Assumption*</em>: Here I assume readers will know that the probability mass function of the Dirichlet distribution has expectation $\mathbb{E}[\log \pi_k] = \psi(\alpha_k&#39;) - \psi(\sum_{j=1}^{3} \alpha_j&#39;)$, where $\psi$ is the digamma function. For a derivation, see <a target="_blank" rel="noopener" href="https://stats.stackexchange.com/questions/483312/how-to-derive-the-expectation-of-ln-mu-j-in-dirichlet-distribution">this reference</a>.</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>Term</th>
+<th>Simplification</th>
+<th>Derivative</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>$\color{blue}{\sum_{i=1}^n \mathbb{E}_{z_i} \left[ \log \mathcal{N}(x_i \mid \mu_{z_i}, \sigma^2) \right]}$</td>
+<td>$\sum_{i=1}^n \sum_{k=1}^3 \phi_{ik} \left[ -\frac{1}{2}\log(2\pi\sigma^2) - \frac{(x_i - m_k&#39;)^2}{2\sigma^2} \right]$</td>
+<td>$\frac{\partial}{\partial m_k&#39;} = \sum_{i=1}^n \phi_{ik} \frac{x_i - m_k&#39;}{\sigma^2}$, $\frac{\partial}{\partial \phi_{ik}} = -\frac{1}{2}\log(2\pi\sigma^2) - \frac{(x_i - m_k&#39;)^2}{2\sigma^2}$</td>
+<td>Likelihood term - $z_i = k$, $\sigma$ is known</td>
+</tr>
+<tr>
+<td>$\color{purple}{\sum_{i=1}^n \mathbb{E}_{z_i} \left[ \log \pi_{z_i} \right]}$</td>
+<td>$\sum_{i=1}^n \sum_{k=1}^3 \phi_{ik} \left[ \psi(\alpha_k&#39;) - \psi(\sum_{j=1}^3 \alpha_j&#39;) \right]$</td>
+<td>$\frac{\partial}{\partial \alpha_k&#39;} = \sum_{i=1}^n \phi_{ik} \left[ \psi&#39;(\alpha_k&#39;) - \psi&#39;(\sum_j \alpha_j&#39;) \right]$, $\frac{\partial}{\partial \phi_{ik}} = \psi(\alpha_k&#39;) - \psi(\sum_{j=1}^3 \alpha_j&#39;)$</td>
+<td>Mixture weight term - use digamma expectation expansion</td>
+</tr>
+<tr>
+<td>$\mathbb{E}_{\boldsymbol{\pi}} \left[ \color{orange}{\log \left( \frac{\Gamma(\sum_{k=1}^{3} \alpha_k)}{\prod_{k=1}^{3} \Gamma(\alpha_k)} \prod_{k=1}^{3} \pi_k^{\alpha_k - 1} \right)} \right]$</td>
+<td>$\log \Gamma(\sum_{k=1}^3 \alpha_k) - \sum_{k=1}^3 \log \Gamma(\alpha_k) + \sum_{k=1}^3 (\alpha_k - 1)[\psi(\alpha_k&#39;) - \psi(\sum_j \alpha_j&#39;)]$</td>
+<td>$\frac{\partial}{\partial \alpha_k&#39;} = (\alpha_k - 1)[\psi&#39;(\alpha_k&#39;) - \psi&#39;(\sum_j \alpha_j&#39;)]$</td>
+<td>Prior on $\boldsymbol{\pi}$</td>
+</tr>
+<tr>
+<td>$\color{red}{\sum_{k=1}^3 \mathbb{E}_{\mu_k} \left[ \log \mathcal{N}(\mu_k \mid m_0, s_0^2) \right]}$</td>
+<td>$\sum_{k=1}^3 \left[ -\frac{1}{2}\log(2\pi s_0^2) - \frac{(m_k&#39; - m_0)^2 + s_k&#39;^2}{2s_0^2} \right]$</td>
+<td>$\frac{\partial}{\partial m_k&#39;} = -\frac{m_k&#39; - m_0}{s_0^2}$, $\frac{\partial}{\partial s_k&#39;^2} = -\frac{1}{2s_0^2}$</td>
+<td>Prior on $\boldsymbol{\mu}$ - expectation taken with respect to $q(\mu_k) = \mathcal{N}(\mu_k \mid m_k&#39;, s_k&#39;^2)$. The term $(m_k&#39; - m_0)^2 + s_k&#39;^2$ comes from $\mathbb{E}_q[(\mu_k - m_0)^2] = \mathbb{E}_q[\mu_k^2] - 2m_0\mathbb{E}_q[\mu_k] + m_0^2 = (s_k&#39;^2 + m_k&#39;^2) - 2m_0 m_k&#39; + m_0^2 = s_k&#39;^2 + (m_k&#39; - m_0)^2$</td>
+</tr>
+<tr>
+<td>$\color{green}{\sum_{i=1}^n \mathbb{E}_{z_i} \left[ \log q(z_i) \right]}$</td>
+<td>$\sum_{i=1}^n \sum_{k=1}^3 \phi_{ik} \log \phi_{ik}$</td>
+<td>$\frac{\partial}{\partial \phi_{ik}} = \log \phi_{ik} + 1$</td>
+<td>Entropy of $q(\boldsymbol{z})$</td>
+</tr>
+<tr>
+<td>$\mathbb{E}_{\boldsymbol{\pi}} \left[ \color{teal}{\log \left( \frac{\Gamma(\sum_{k=1}^{3} \alpha_k&#39;)}{\prod_{k=1}^{3} \Gamma(\alpha_k&#39;)} \prod_{k=1}^{3} \pi_k^{\alpha_k&#39; - 1} \right)} \right]$</td>
+<td>$\log \Gamma(\sum_{k=1}^3 \alpha_k&#39;) - \sum_{k=1}^3 \log \Gamma(\alpha_k&#39;) + \sum_{k=1}^3 (\alpha_k&#39; - 1)[\psi(\alpha_k&#39;) - \psi(\sum_j \alpha_j&#39;)]$</td>
+<td>$\frac{\partial}{\partial \alpha_k&#39;}$ = $\psi(\sum_j \alpha_j&#39;) - \psi(\alpha_k&#39;) + \log \phi_{ik} + <a href="\alpha_k&#39; - 1">\psi&#39;(\alpha_k&#39;) - \psi&#39;(\sum_j \alpha_j&#39;)</a> + \psi(\alpha_k&#39;) - \psi(\sum_j \alpha_j&#39;)$</td>
+<td>Entropy of $q(\boldsymbol{\pi})$</td>
+</tr>
+<tr>
+<td>$\color{brown}{\sum_{k=1}^3 \mathbb{E}_{\mu_k} \left[ \log \mathcal{N}(\mu_k \mid m_k&#39;, s_k&#39;^2) \right]}$</td>
+<td>$\sum_{k=1}^3 \left[ -\frac{1}{2}\log(2\pi s_k&#39;^2) - \frac{1}{2} \right]$</td>
+<td>$\frac{\partial}{\partial m_k&#39;} = 0$, $\frac{\partial}{\partial s_k&#39;^2} = -\frac{1}{2s_k&#39;^2}$</td>
+<td>Entropy of $q(\boldsymbol{\mu})$ - since $\mu_k \sim \mathcal{N}(m_k&#39;, s_k&#39;^2)$, $\mathbb{E}_{\mu_k}[(\mu_k - m_k&#39;)^2] = s_k&#39;^2$</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>so the code for computing the ELBO is<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">compute_elbo</span>(<span class="params">X, phi, alpha_variational, m_variational, s_squared_variational, </span></span><br><span class="line"><span class="params">                alpha_prior, m0, s0_squared, sigma_squared</span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">    Compute the Evidence Lower Bound (ELBO)</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">    X: (n_samples, ) data points</span></span><br><span class="line"><span class="string">    alpha_variational: (K, ) variational parameters for π</span></span><br><span class="line"><span class="string">    m_variational: (K, ) variational parameters for μ</span></span><br><span class="line"><span class="string">    s_squared_variational: (K, ) variational parameters for σ²</span></span><br><span class="line"><span class="string">    alpha_prior: (K, ) prior parameters for π from Dirichlet distribution</span></span><br><span class="line"><span class="string">    m0: (K, ) prior parameters for μ from Normal distribution for μ</span></span><br><span class="line"><span class="string">    s0_squared: (K, ) prior parameters for σ² from Normal distribution for μ </span></span><br><span class="line"><span class="string">    sigma_squared: (K, ) known variance for σ²</span></span><br><span class="line"><span class="string">    </span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line">    n = <span class="built_in">len</span>(X)</span><br><span class="line">    K = <span class="built_in">len</span>(alpha_variational)</span><br><span class="line">    </span><br><span class="line">    elbo = <span class="number">0.0</span></span><br><span class="line">    </span><br><span class="line">    <span class="comment"># E_q[log p(x | z, μ)]</span></span><br><span class="line">    <span class="comment"># For each sample i and component k: φ_ik * log N(xi | mk&#x27;, σ²)</span></span><br><span class="line">    <span class="comment"># we multiply by phi_ik because it is equivalent of taking the expectation and stands for p(z_i = k)</span></span><br><span class="line">    <span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(n):</span><br><span class="line">        <span class="keyword">for</span> k <span class="keyword">in</span> <span class="built_in">range</span>(K):</span><br><span class="line">            log_likelihood = -<span class="number">0.5</span> * np.log(<span class="number">2</span> * np.pi * sigma_squared) - <span class="number">0.5</span> * (X[i] - m_variational[k])**<span class="number">2</span> / sigma_squared</span><br><span class="line">            elbo += phi[i, k] * log_likelihood</span><br><span class="line">    </span><br><span class="line">    <span class="comment"># E_q[log p(z | π)]</span></span><br><span class="line">    <span class="comment"># For each sample i and component k: φ_ik * E[log πk]</span></span><br><span class="line">    <span class="comment"># E[log πk] under Dirichlet = ψ(α&#x27;k) - ψ(Σα&#x27;k)</span></span><br><span class="line">    digamma_sum = digamma(alpha_variational.<span class="built_in">sum</span>())</span><br><span class="line">    <span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(n):</span><br><span class="line">        <span class="keyword">for</span> k <span class="keyword">in</span> <span class="built_in">range</span>(K):</span><br><span class="line">            expected_log_pi = digamma(alpha_variational[k]) - digamma_sum</span><br><span class="line">            elbo += phi[i, k] * expected_log_pi</span><br><span class="line">    </span><br><span class="line">    <span class="comment"># E_q[log p(π)] - Dirichlet prior</span></span><br><span class="line">    <span class="comment"># log p(π) = log Dirichlet(π | α)</span></span><br><span class="line">    <span class="comment"># E_q[log p(π)] = log Γ(Σα) - Σ log Γ(α) + Σ(α-1)E[log π]</span></span><br><span class="line">    elbo += gammaln(alpha_prior.<span class="built_in">sum</span>()) - gammaln(alpha_prior).<span class="built_in">sum</span>()</span><br><span class="line">    <span class="keyword">for</span> k <span class="keyword">in</span> <span class="built_in">range</span>(K):</span><br><span class="line">        <span class="comment"># E_q[log πk] where q(π) = Dirichlet(α&#x27;)</span></span><br><span class="line">        <span class="comment"># For a Dirichlet distribution q(π) = Dirichlet(α&#x27;), the expected value of log πk is:</span></span><br><span class="line">        <span class="comment"># E_q[log πk] = ψ(α&#x27;k) - ψ(Σ_j α&#x27;j)</span></span><br><span class="line">        <span class="comment"># where ψ is the digamma function (derivative of log Γ)</span></span><br><span class="line">        <span class="comment"># </span></span><br><span class="line">        <span class="comment"># This comes from the property of the Dirichlet distribution:</span></span><br><span class="line">        <span class="comment"># If π ~ Dirichlet(α&#x27;), then E[log πk] = ψ(α&#x27;k) - ψ(Σα&#x27;)</span></span><br><span class="line">        <span class="comment"># </span></span><br><span class="line">        <span class="comment"># Intuition: The digamma function ψ(x) ≈ log(x) for large x, so this is approximately</span></span><br><span class="line">        <span class="comment"># log(α&#x27;k) - log(Σα&#x27;), which relates to the expected log of the normalized weight.</span></span><br><span class="line">        expected_log_pi = digamma(alpha_variational[k]) - digamma_sum</span><br><span class="line">        elbo += (alpha_prior[k] - <span class="number">1</span>) * expected_log_pi</span><br><span class="line">    </span><br><span class="line">    <span class="comment"># E_q[log p(μ)] - Normal prior</span></span><br><span class="line">    <span class="comment"># For each component k: log N(μk | m0, s0²)</span></span><br><span class="line">    <span class="keyword">for</span> k <span class="keyword">in</span> <span class="built_in">range</span>(K):</span><br><span class="line">        <span class="comment"># E_q[log N(μk | m0, s0²)]</span></span><br><span class="line">        <span class="comment"># The log probability of a Normal distribution is:</span></span><br><span class="line">        <span class="comment"># log N(μk | m0, s0²) = -0.5*log(2π*s0²) - 0.5*(μk - m0)²/s0²</span></span><br><span class="line">        <span class="comment"># </span></span><br><span class="line">        <span class="comment"># Taking expectation with respect to q(μk) = N(mk&#x27;, sk&#x27;²):</span></span><br><span class="line">        <span class="comment"># E_q[log N(μk | m0, s0²)] = -0.5*log(2π*s0²) - 0.5*E_q[(μk - m0)²]/s0²</span></span><br><span class="line">        <span class="comment"># </span></span><br><span class="line">        <span class="comment"># Now we need to compute E_q[(μk - m0)²] where μk ~ N(mk&#x27;, sk&#x27;²):</span></span><br><span class="line">        <span class="comment"># E_q[(μk - m0)²] = E_q[μk² - 2μk*m0 + m0²]</span></span><br><span class="line">        <span class="comment">#                 = E_q[μk²] - 2*m0*E_q[μk] + m0²</span></span><br><span class="line">        <span class="comment"># </span></span><br><span class="line">        <span class="comment"># For a Gaussian q(μk) = N(mk&#x27;, sk&#x27;²):</span></span><br><span class="line">        <span class="comment"># - E_q[μk] = mk&#x27; (the mean)</span></span><br><span class="line">        <span class="comment"># - E_q[μk²] = Var(μk) + (E[μk])² = sk&#x27;² + (mk&#x27;)² (second moment formula)</span></span><br><span class="line">        <span class="comment"># </span></span><br><span class="line">        <span class="comment"># Substituting:</span></span><br><span class="line">        <span class="comment"># E_q[(μk - m0)²] = (sk&#x27;² + (mk&#x27;)²) - 2*m0*mk&#x27; + m0²</span></span><br><span class="line">        <span class="comment">#                 = sk&#x27;² + (mk&#x27;)² - 2*m0*mk&#x27; + m0²</span></span><br><span class="line">        <span class="comment">#                 = sk&#x27;² + (mk&#x27; - m0)²</span></span><br><span class="line">        <span class="comment"># </span></span><br><span class="line">        <span class="comment"># The sk&#x27;² term represents the uncertainty in our variational approximation q(μk).</span></span><br><span class="line">        <span class="comment"># Even if mk&#x27; = m0, we still have a penalty proportional to the variance sk&#x27;².</span></span><br><span class="line">        expected_squared_diff = (m_variational[k] - m0)**<span class="number">2</span> + s_squared_variational[k]</span><br><span class="line">        log_prior = -<span class="number">0.5</span> * np.log(<span class="number">2</span> * np.pi * s0_squared) - <span class="number">0.5</span> * expected_squared_diff / s0_squared</span><br><span class="line">        elbo += log_prior</span><br><span class="line">    </span><br><span class="line">    <span class="comment"># -E_q[log q(z)]</span></span><br><span class="line">    <span class="comment"># Entropy of categorical: -Σi Σk φ_ik log φ_ik</span></span><br><span class="line">    <span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(n):</span><br><span class="line">        <span class="keyword">for</span> k <span class="keyword">in</span> <span class="built_in">range</span>(K):</span><br><span class="line">            <span class="keyword">if</span> phi[i, k] &gt; <span class="number">1e-10</span>:  <span class="comment"># Avoid log(0)</span></span><br><span class="line">                elbo -= phi[i, k] * np.log(phi[i, k])</span><br><span class="line">    </span><br><span class="line">    <span class="comment"># -E_q[log q(π)]</span></span><br><span class="line">    <span class="comment"># Entropy of Dirichlet</span></span><br><span class="line">    elbo -= gammaln(alpha_variational.<span class="built_in">sum</span>()) - gammaln(alpha_variational).<span class="built_in">sum</span>()</span><br><span class="line">    <span class="keyword">for</span> k <span class="keyword">in</span> <span class="built_in">range</span>(K):</span><br><span class="line">        expected_log_pi = digamma(alpha_variational[k]) - digamma_sum</span><br><span class="line">        elbo -= (alpha_variational[k] - <span class="number">1</span>) * expected_log_pi</span><br><span class="line">    </span><br><span class="line">    <span class="comment"># -E_q[log q(μ)]</span></span><br><span class="line">    <span class="comment"># Entropy of Gaussians: 0.5*log(2πe*s²)</span></span><br><span class="line">    <span class="keyword">for</span> k <span class="keyword">in</span> <span class="built_in">range</span>(K):</span><br><span class="line">        entropy = <span class="number">0.5</span> * np.log(<span class="number">2</span> * np.pi * np.e * s_squared_variational[k])</span><br><span class="line">        elbo += entropy</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">return</span> elbo</span><br></pre></td></tr></table></figure></p>
+<p>  Similarly we can write code for updating the variational parameters <code>phi</code>, <code>alpha</code> and <code>m_k, s_k</code> and do gradient ascent to update $q$&#39;s parameters.</p>
+<p align="center">
+  <img src="/2025/10/13/Introduction-to-denoising-diffusion-models-part-1/improved_svi_convergence.gif" style="max-width:500px; height:auto; width:42%;">
+</p>
+  </div>
+  <div class="post-footer">
+    
+      <ul class="post-tag-list" itemprop="keywords"><li class="post-tag-list-item"><a class="post-tag-list-link" href="/tags/Diffusion/" rel="tag">Diffusion</a></li><li class="post-tag-list-item"><a class="post-tag-list-link" href="/tags/Statistics/" rel="tag">Statistics</a></li><li class="post-tag-list-item"><a class="post-tag-list-link" href="/tags/Variational-Inference/" rel="tag">Variational Inference</a></li></ul>
+    
+
+    <a href="#top" class="top">Back to Top</a>
+  </div>
+</article>
+<footer>
+  &copy; 2025
+  <span class="author">
+    Sooham Rafiz
+  </span>
+</footer>
+    </div>
+  </body>
+</html>
