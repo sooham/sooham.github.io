@@ -311,8 +311,9 @@ so the code for computing the ELBO is
       return elbo
   ```
 
-  Similarly we can write code for updating the variational parameters `phi`, `alpha` and `m_k, s_k` and do gradient ascent to update $q$'s parameters.
+  Similarly we can write code for updating the variational parameters `phi`, `alpha` and `m_k, s_k` and do gradient ascent to update $q$'s parameters, as shown in the animation below
 
 <p align="center">
   <img src="/2025/10/13/Introduction-to-denoising-diffusion-models-part-1/improved_svi_convergence.gif" style="max-width:600px; height:auto; width:100%;">
 </p>
+
