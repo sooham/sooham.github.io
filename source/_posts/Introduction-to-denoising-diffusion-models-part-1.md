@@ -192,12 +192,127 @@ As seen, the ELBO is the sum of seven terms - we will simplify them out enough t
 
 *Assumption**: Here I assume readers will know that the probability mass function of the Dirichlet distribution has expectation $\mathbb{E}[\log \pi_k] = \psi(\alpha_k') - \psi(\sum_{j=1}^{3} \alpha_j')$, where $\psi$ is the digamma function. For a derivation, see [this reference](https://stats.stackexchange.com/questions/483312/how-to-derive-the-expectation-of-ln-mu-j-in-dirichlet-distribution).
 
-| Term | Simplification | Derivative | Code | Notes |
-|------|----------------|------------|------|-------|
-| $\color{blue}{\sum_{i=1}^n \mathbb{E}_{z_i} \left[ \log \mathcal{N}(x_i \mid \mu_{z_i}, \sigma^2) \right]}$ | $\sum_{i=1}^n \sum_{k=1}^3 \phi_{ik} \left[ -\frac{1}{2}\log(2\pi\sigma^2) - \frac{(x_i - m_k')^2}{2\sigma^2} \right]$ | $\frac{\partial}{\partial m_k'} = \sum_{i=1}^n \phi_{ik} \frac{x_i - m_k'}{\sigma^2}$ | TODO | Likelihood term - $z_i = k$, $\sigma$ is known |
-| $\color{purple}{\sum_{i=1}^n \mathbb{E}_{z_i} \left[ \log \pi_{z_i} \right]}$ | $\sum_{i=1}^n \sum_{k=1}^3 \phi_{ik} \left[ \psi(\alpha_k') - \psi(\sum_{j=1}^3 \alpha_j') \right]$ | $\frac{\partial}{\partial \alpha_k'} = \sum_{i=1}^n \phi_{ik} \left[ \psi'(\alpha_k') - \psi'(\sum_j \alpha_j') \right]$ | TODO | Mixture weight term - use digamma expectation expansion |
-| $\mathbb{E}_{\boldsymbol{\pi}} \left[ \color{orange}{\log \left( \frac{\Gamma(\sum_{k=1}^{3} \alpha_k)}{\prod_{k=1}^{3} \Gamma(\alpha_k)} \prod_{k=1}^{3} \pi_k^{\alpha_k - 1} \right)} \right]$ | $\log \Gamma(\sum_{k=1}^3 \alpha_k) - \sum_{k=1}^3 \log \Gamma(\alpha_k) + \sum_{k=1}^3 (\alpha_k - 1)[\psi(\alpha_k') - \psi(\sum_j \alpha_j')]$ | $\frac{\partial}{\partial \alpha_k'} = (\alpha_k - 1)[\psi'(\alpha_k') - \psi'(\sum_j \alpha_j')]$ | TODO | Prior on $\boldsymbol{\pi}$ |
-| $\color{red}{\sum_{k=1}^3 \mathbb{E}_{\mu_k} \left[ \log \mathcal{N}(\mu_k \mid m_0, s_0^2) \right]}$ | $\sum_{k=1}^3 \mathbb{E}_{q(\mu_k)} \left[ -\frac{1}{2}\log(2\pi s_0^2) - \frac{(\mu_k - m_0)^2}{2s_0^2} \right]$ | $\frac{\partial}{\partial m_k'} = -\frac{m_k' - m_0}{s_0^2}$, $\frac{\partial}{\partial s_k'^2} = -\frac{1}{2s_0^2}$ | TODO | Prior on $\boldsymbol{\mu}$ - expectation taken with respect to $q(\mu_k) = \mathcal{N}(\mu_k \mid m_k', s_k'^2)$, computed via Monte Carlo sampling|
-| $\color{green}{\sum_{i=1}^n \mathbb{E}_{z_i} \left[ \log q(z_i) \right]}$ | $\sum_{i=1}^n \sum_{k=1}^3 \phi_{ik} \log \phi_{ik}$ | $\frac{\partial}{\partial \phi_{ik}} = \log \phi_{ik} + 1$ | TODO | Entropy of $q(\boldsymbol{z})$ |
-| $\mathbb{E}_{\boldsymbol{\pi}} \left[ \color{teal}{\log \left( \frac{\Gamma(\sum_{k=1}^{3} \alpha_k')}{\prod_{k=1}^{3} \Gamma(\alpha_k')} \prod_{k=1}^{3} \pi_k^{\alpha_k' - 1} \right)} \right]$ | $\log \Gamma(\sum_{k=1}^3 \alpha_k') - \sum_{k=1}^3 \log \Gamma(\alpha_k') + \sum_{k=1}^3 (\alpha_k' - 1)[\psi(\alpha_k') - \psi(\sum_j \alpha_j')]$ | $\frac{\partial}{\partial \alpha_k'}$ = $\psi(\sum_j \alpha_j') - \psi(\alpha_k') + \log \phi_{ik} + [\psi'(\alpha_k') - \psi'(\sum_j \alpha_j')](\alpha_k' - 1) + \psi(\alpha_k') - \psi(\sum_j \alpha_j')$ | TODO | Entropy of $q(\boldsymbol{\pi})$ |
-| $\color{brown}{\sum_{k=1}^3 \mathbb{E}_{\mu_k} \left[ \log \mathcal{N}(\mu_k \mid m_k', s_k'^2) \right]}$ | $\sum_{k=1}^3 \left[ -\frac{1}{2}\log(2\pi s_k'^2) - \frac{1}{2} \right]$ | $\frac{\partial}{\partial m_k'} = 0$, $\frac{\partial}{\partial s_k'^2} = -\frac{1}{2s_k'^2}$ | TODO | Entropy of $q(\boldsymbol{\mu})$ - since $\mu_k \sim \mathcal{N}(m_k', s_k'^2)$, $\mathbb{E}_{\mu_k}[(\mu_k - m_k')^2] = s_k'^2$ |
+| Term | Simplification | Derivative | Notes |
+|------|----------------|------------|-------|
+| $\color{blue}{\sum_{i=1}^n \mathbb{E}_{z_i} \left[ \log \mathcal{N}(x_i \mid \mu_{z_i}, \sigma^2) \right]}$ | $\sum_{i=1}^n \sum_{k=1}^3 \phi_{ik} \left[ -\frac{1}{2}\log(2\pi\sigma^2) - \frac{(x_i - m_k')^2}{2\sigma^2} \right]$ | $\frac{\partial}{\partial m_k'} = \sum_{i=1}^n \phi_{ik} \frac{x_i - m_k'}{\sigma^2}$, $\frac{\partial}{\partial \phi_{ik}} = -\frac{1}{2}\log(2\pi\sigma^2) - \frac{(x_i - m_k')^2}{2\sigma^2}$ | Likelihood term - $z_i = k$, $\sigma$ is known |
+| $\color{purple}{\sum_{i=1}^n \mathbb{E}_{z_i} \left[ \log \pi_{z_i} \right]}$ | $\sum_{i=1}^n \sum_{k=1}^3 \phi_{ik} \left[ \psi(\alpha_k') - \psi(\sum_{j=1}^3 \alpha_j') \right]$ | $\frac{\partial}{\partial \alpha_k'} = \sum_{i=1}^n \phi_{ik} \left[ \psi'(\alpha_k') - \psi'(\sum_j \alpha_j') \right]$, $\frac{\partial}{\partial \phi_{ik}} = \psi(\alpha_k') - \psi(\sum_{j=1}^3 \alpha_j')$ | Mixture weight term - use digamma expectation expansion |
+| $\mathbb{E}_{\boldsymbol{\pi}} \left[ \color{orange}{\log \left( \frac{\Gamma(\sum_{k=1}^{3} \alpha_k)}{\prod_{k=1}^{3} \Gamma(\alpha_k)} \prod_{k=1}^{3} \pi_k^{\alpha_k - 1} \right)} \right]$ | $\log \Gamma(\sum_{k=1}^3 \alpha_k) - \sum_{k=1}^3 \log \Gamma(\alpha_k) + \sum_{k=1}^3 (\alpha_k - 1)[\psi(\alpha_k') - \psi(\sum_j \alpha_j')]$ | $\frac{\partial}{\partial \alpha_k'} = (\alpha_k - 1)[\psi'(\alpha_k') - \psi'(\sum_j \alpha_j')]$ | Prior on $\boldsymbol{\pi}$ |
+| $\color{red}{\sum_{k=1}^3 \mathbb{E}_{\mu_k} \left[ \log \mathcal{N}(\mu_k \mid m_0, s_0^2) \right]}$ | $\sum_{k=1}^3 \left[ -\frac{1}{2}\log(2\pi s_0^2) - \frac{(m_k' - m_0)^2 + s_k'^2}{2s_0^2} \right]$ | $\frac{\partial}{\partial m_k'} = -\frac{m_k' - m_0}{s_0^2}$, $\frac{\partial}{\partial s_k'^2} = -\frac{1}{2s_0^2}$ | Prior on $\boldsymbol{\mu}$ - expectation taken with respect to $q(\mu_k) = \mathcal{N}(\mu_k \mid m_k', s_k'^2)$. The term $(m_k' - m_0)^2 + s_k'^2$ comes from $\mathbb{E}_q[(\mu_k - m_0)^2] = \mathbb{E}_q[\mu_k^2] - 2m_0\mathbb{E}_q[\mu_k] + m_0^2 = (s_k'^2 + m_k'^2) - 2m_0 m_k' + m_0^2 = s_k'^2 + (m_k' - m_0)^2$|
+| $\color{green}{\sum_{i=1}^n \mathbb{E}_{z_i} \left[ \log q(z_i) \right]}$ | $\sum_{i=1}^n \sum_{k=1}^3 \phi_{ik} \log \phi_{ik}$ | $\frac{\partial}{\partial \phi_{ik}} = \log \phi_{ik} + 1$ | Entropy of $q(\boldsymbol{z})$ |
+| $\mathbb{E}_{\boldsymbol{\pi}} \left[ \color{teal}{\log \left( \frac{\Gamma(\sum_{k=1}^{3} \alpha_k')}{\prod_{k=1}^{3} \Gamma(\alpha_k')} \prod_{k=1}^{3} \pi_k^{\alpha_k' - 1} \right)} \right]$ | $\log \Gamma(\sum_{k=1}^3 \alpha_k') - \sum_{k=1}^3 \log \Gamma(\alpha_k') + \sum_{k=1}^3 (\alpha_k' - 1)[\psi(\alpha_k') - \psi(\sum_j \alpha_j')]$ | $\frac{\partial}{\partial \alpha_k'}$ = $\psi(\sum_j \alpha_j') - \psi(\alpha_k') + \log \phi_{ik} + [\psi'(\alpha_k') - \psi'(\sum_j \alpha_j')](\alpha_k' - 1) + \psi(\alpha_k') - \psi(\sum_j \alpha_j')$ | Entropy of $q(\boldsymbol{\pi})$ |
+| $\color{brown}{\sum_{k=1}^3 \mathbb{E}_{\mu_k} \left[ \log \mathcal{N}(\mu_k \mid m_k', s_k'^2) \right]}$ | $\sum_{k=1}^3 \left[ -\frac{1}{2}\log(2\pi s_k'^2) - \frac{1}{2} \right]$ | $\frac{\partial}{\partial m_k'} = 0$, $\frac{\partial}{\partial s_k'^2} = -\frac{1}{2s_k'^2}$ | Entropy of $q(\boldsymbol{\mu})$ - since $\mu_k \sim \mathcal{N}(m_k', s_k'^2)$, $\mathbb{E}_{\mu_k}[(\mu_k - m_k')^2] = s_k'^2$ |
+
+so the code for computing the ELBO is
+```python
+  def compute_elbo(X, phi, alpha_variational, m_variational, s_squared_variational, 
+                  alpha_prior, m0, s0_squared, sigma_squared):
+      """
+      Compute the Evidence Lower Bound (ELBO)
+
+      X: (n_samples, ) data points
+      alpha_variational: (K, ) variational parameters for π
+      m_variational: (K, ) variational parameters for μ
+      s_squared_variational: (K, ) variational parameters for σ²
+      alpha_prior: (K, ) prior parameters for π from Dirichlet distribution
+      m0: (K, ) prior parameters for μ from Normal distribution for μ
+      s0_squared: (K, ) prior parameters for σ² from Normal distribution for μ 
+      sigma_squared: (K, ) known variance for σ²
+      
+      """
+      n = len(X)
+      K = len(alpha_variational)
+      
+      elbo = 0.0
+      
+      # E_q[log p(x | z, μ)]
+      # For each sample i and component k: φ_ik * log N(xi | mk', σ²)
+      # we multiply by phi_ik because it is equivalent of taking the expectation and stands for p(z_i = k)
+      for i in range(n):
+          for k in range(K):
+              log_likelihood = -0.5 * np.log(2 * np.pi * sigma_squared) - 0.5 * (X[i] - m_variational[k])**2 / sigma_squared
+              elbo += phi[i, k] * log_likelihood
+      
+      # E_q[log p(z | π)]
+      # For each sample i and component k: φ_ik * E[log πk]
+      # E[log πk] under Dirichlet = ψ(α'k) - ψ(Σα'k)
+      digamma_sum = digamma(alpha_variational.sum())
+      for i in range(n):
+          for k in range(K):
+              expected_log_pi = digamma(alpha_variational[k]) - digamma_sum
+              elbo += phi[i, k] * expected_log_pi
+      
+      # E_q[log p(π)] - Dirichlet prior
+      # log p(π) = log Dirichlet(π | α)
+      # E_q[log p(π)] = log Γ(Σα) - Σ log Γ(α) + Σ(α-1)E[log π]
+      elbo += gammaln(alpha_prior.sum()) - gammaln(alpha_prior).sum()
+      for k in range(K):
+          # E_q[log πk] where q(π) = Dirichlet(α')
+          # For a Dirichlet distribution q(π) = Dirichlet(α'), the expected value of log πk is:
+          # E_q[log πk] = ψ(α'k) - ψ(Σ_j α'j)
+          # where ψ is the digamma function (derivative of log Γ)
+          # 
+          # This comes from the property of the Dirichlet distribution:
+          # If π ~ Dirichlet(α'), then E[log πk] = ψ(α'k) - ψ(Σα')
+          # 
+          # Intuition: The digamma function ψ(x) ≈ log(x) for large x, so this is approximately
+          # log(α'k) - log(Σα'), which relates to the expected log of the normalized weight.
+          expected_log_pi = digamma(alpha_variational[k]) - digamma_sum
+          elbo += (alpha_prior[k] - 1) * expected_log_pi
+      
+      # E_q[log p(μ)] - Normal prior
+      # For each component k: log N(μk | m0, s0²)
+      for k in range(K):
+          # E_q[log N(μk | m0, s0²)]
+          # The log probability of a Normal distribution is:
+          # log N(μk | m0, s0²) = -0.5*log(2π*s0²) - 0.5*(μk - m0)²/s0²
+          # 
+          # Taking expectation with respect to q(μk) = N(mk', sk'²):
+          # E_q[log N(μk | m0, s0²)] = -0.5*log(2π*s0²) - 0.5*E_q[(μk - m0)²]/s0²
+          # 
+          # Now we need to compute E_q[(μk - m0)²] where μk ~ N(mk', sk'²):
+          # E_q[(μk - m0)²] = E_q[μk² - 2μk*m0 + m0²]
+          #                 = E_q[μk²] - 2*m0*E_q[μk] + m0²
+          # 
+          # For a Gaussian q(μk) = N(mk', sk'²):
+          # - E_q[μk] = mk' (the mean)
+          # - E_q[μk²] = Var(μk) + (E[μk])² = sk'² + (mk')² (second moment formula)
+          # 
+          # Substituting:
+          # E_q[(μk - m0)²] = (sk'² + (mk')²) - 2*m0*mk' + m0²
+          #                 = sk'² + (mk')² - 2*m0*mk' + m0²
+          #                 = sk'² + (mk' - m0)²
+          # 
+          # The sk'² term represents the uncertainty in our variational approximation q(μk).
+          # Even if mk' = m0, we still have a penalty proportional to the variance sk'².
+          expected_squared_diff = (m_variational[k] - m0)**2 + s_squared_variational[k]
+          log_prior = -0.5 * np.log(2 * np.pi * s0_squared) - 0.5 * expected_squared_diff / s0_squared
+          elbo += log_prior
+      
+      # -E_q[log q(z)]
+      # Entropy of categorical: -Σi Σk φ_ik log φ_ik
+      for i in range(n):
+          for k in range(K):
+              if phi[i, k] > 1e-10:  # Avoid log(0)
+                  elbo -= phi[i, k] * np.log(phi[i, k])
+      
+      # -E_q[log q(π)]
+      # Entropy of Dirichlet
+      elbo -= gammaln(alpha_variational.sum()) - gammaln(alpha_variational).sum()
+      for k in range(K):
+          expected_log_pi = digamma(alpha_variational[k]) - digamma_sum
+          elbo -= (alpha_variational[k] - 1) * expected_log_pi
+      
+      # -E_q[log q(μ)]
+      # Entropy of Gaussians: 0.5*log(2πe*s²)
+      for k in range(K):
+          entropy = 0.5 * np.log(2 * np.pi * np.e * s_squared_variational[k])
+          elbo += entropy
+      
+      return elbo
+  ```
+
+  Similarly we can write code for updating the variational parameters `phi`, `alpha` and `m_k, s_k` and do gradient ascent to update $q$'s parameters.
+
+<p align="center">
+  <img src="/2025/10/13/Introduction-to-denoising-diffusion-models-part-1/improved_svi_convergence.gif" style="max-width:600px; height:auto; width:100%;">
+</p>

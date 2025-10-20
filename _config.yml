@@ -20,15 +20,16 @@ timezone: America/New_York
 
 # Image settings
 post_asset_folder: true
-marked:
-  prependRoot: true
-  postAsset: true
-  mangle: true
-  sanitize: true
-  dompurify: false
-  external_link: 
-    enable: true
-  descriptionLists: falsee
+
+# Kramed renderer configuration for proper math rendering
+kramed:
+  gfm: true
+  pedantic: false
+  sanitize: false
+  tables: true
+  breaks: true
+  smartLists: true
+  smartypants: false
 
 # URL
 ## If your site is put in a subdirectory, set url as 'http://yoursite.com/child' and root as '/child/'
