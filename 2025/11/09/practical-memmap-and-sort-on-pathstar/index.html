@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html>
+  <!DOCTYPE html>
+<!--<html lang="en">-->
+<head>
+  
+  <!-- Google Analytics (GA4) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-WC8766BHKN"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-WC8766BHKN');
+  </script>
+  
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=Edge,chrome=1">
+  
+  <title>What next token prediction models can&#39;t do well in-context. - Computer Stuff and Other Stuff</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
+  
+  <meta name="keywords" content=NLP,Sequence Modelling,Next Token Prediction,Pathstar>
+  
+    <meta name="description" content="An exploration into algorithms.">
+  
+  
+    <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico?v=1.02">
+  
+  
+    <link rel="alternate" href="/atom.xml " title="Computer Stuff and Other Stuff" type="application/atom+xml">
+  
+
+  <script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+    menuSettings: {
+      zoom: "None"
+    },
+    showMathMenu: false,
+    jax: ["input/TeX","output/HTML-CSS"],
+    extensions: ["tex2jax.js"],
+    TeX: {
+      extensions: ["AMSmath.js","AMSsymbols.js","color.js"],
+      equationNumbers: {
+        autoNumber: "AMS"
+      }
+    },
+    "HTML-CSS": {
+      availableFonts: ["TeX"],
+      preferredFont: "TeX",
+      webFont: "TeX",
+      imageFont: null
+    },
+    tex2jax: {
+      inlineMath: [["\\(", "\\)"], ["$", "$"]],
+      displayMath: [["\\[", "\\]"], ["$$", "$$"]],
+      processEscapes: true,
+      processEnvironments: true
+    }
+  });
+</script>
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-MML-AM_CHTML"></script>
+  
+<link rel="stylesheet" href="/css/style.css">
+
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+  <body>
+    <div class="container">
+      <header class="header">
+  <div class="blog-title">
+    <a href="/" class="logo">Computer Stuff and Other Stuff</a>
+    <div class="subtitle">By Sooham Rafiz</div>
+  </div>
+  <nav class="navbar">
+    <ul class="menu">
+      
+        <li class="menu-item">
+          <a href="/" class="menu-item-link">Home</a>
+        </li>
+      
+    </ul>
+  </nav>
+</header>
+<article class="post">
+  <div class="post-title">
+    <h1 class="article-title">What next token prediction models can&#39;t do well in-context.</h1>
+  </div>
+   <div class="post-meta">
+    <span class="post-time">2025-11-09</span>
+  </div>
+  <div class="post-content">
+    <h1 id="High-level-plan"><a href="#High-level-plan" class="headerlink" title="High level plan:"></a>High level plan:</h1><ul>
+<li>Explain the architecture of next token prediction models i.e transformer based models<ul>
+<li>p(x_t | x_{t-1}, x_{t-2}, ... x_{0})</li>
+<li>how do gradients propagate in next token prediction models across time</li>
+<li>how this leads to &quot;needle in a haystack&quot; problem</li>
+</ul>
+</li>
+<li>Explain pathstar task and objective with in context learning <ul>
+<li>describe an example pathstar task with D spokes of length L, in context</li>
+<li>describe the backward task predict the backward path through spoke given the leaf<ul>
+<li>show that this works well</li>
+</ul>
+</li>
+<li>describe the forward task predict the forward path through spoke given the leaf   <ul>
+<li>show that this results in a needle in a haystack problem</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>What are the workarounds for this needle in a haystack problem<ul>
+<li>different curriculum to learn, learn to memorize the model a la. word2vec, show previous work on node2vec</li>
+<li>how embeddings in a transformers residual space break down on pathstar tasks. </li>
+</ul>
+</li>
+<li>How node2vec learns more than just associations, it learns a global geometry of the graph.</li>
+</ul>
+<h6 id="Node2vec-form"><a href="#Node2vec-form" class="headerlink" title="####### Node2vec form"></a>####### Node2vec form</h6><p>E is embedding matrix (d=dim,  n=vocab_size) which is column vectors [e_1 e_2 ... e_n]<br>[e_11 e_21 ... e_n1]<br>[e_21 e_22 ... e_n2]<br>...<br>[e_1d e_2d ... e_nd]</p>
+<p>E^T is unembedding matrix (tied weights) (n=vocab_size, d=dim)<br>Let y_hat_one_hot(u) = E^T E u, where u is a one hot column vector of shape (n, 1) that is 1 at index x and 0 elsewhere<br>and the loss L_softmax_one_hot(u) is the cross entropy loss of y_hat_one_hot(u) and u which is one hot on index x<br>in terms of the column vectors, e_x is embedding at column x of shape (d, 1), thus, we can write y_hat_one_hot(u) as<br>y_hat_one_hot(u) = y_hat(x)<br>y_hat(x) = E^T e_x<br>y_hat(x) = [row(e_1^T) row(e_2^T) ... row(e_n^T)] e_x<br>y_hat(x) = [e_1^T e_2^T ... e_n^T] e_x<br>y_hat(x) = (e_i^T e_x) for i in [1, n]<br>y_hat(x) = (y_hat_i(x)) for i=1...n (vector notation)<br>and y_hat_i(x) = (\sum_{j=1}^{d} e_ji e_jx)<br>\sum_{j=1}^{d} e_jx e_jx</p>
+<p>thus for one hot vector u x<br>L_softmax_one_hot(u) = -log(cross_entropy(y_hat_one_hot(u), u))<br>L_softmax_one_hot(u) = -log(cross_entropy(y_hat(x), u))<br>L_softmax_one_hot(u) = -log(exp(y_hat_x(x)) / \sum_{i=1}^{n} exp(y_hat_i(x)))<br>L_softmax_one_hot(u) = -log(exp(\sum_{j=1}^{d} e_jx e_jx) / \sum_{i=1}^{n} exp(\sum_{j=1}^{d} e_ji e_jx))</p>
+<p>which is a quadratic form look at the expansion of x^T W x where W is a matrix of shape (k, k)<br>x^T W x = \sum_{i=1}^{k} \sum_{j=1}^{k} x_i w_ij x_j</p>
+<h6 id="More-math-on-e-T-W-assoc-e-quadratic-forms-where-e-is-embedding"><a href="#More-math-on-e-T-W-assoc-e-quadratic-forms-where-e-is-embedding" class="headerlink" title="############## More math on e^T W_assoc e quadratic forms, where e is embedding"></a>############## More math on e^T W_assoc e quadratic forms, where e is embedding</h6><p>See <a target="_blank" rel="noopener" href="https://claude.ai/chat/06081abb-868a-4056-a9d6-58a5966ae59f">https://claude.ai/chat/06081abb-868a-4056-a9d6-58a5966ae59f</a><br>Key insights:</p>
+<ul>
+<li>if 0 is an eigenvalue of W, then W is not invertible , determinant is 0</li>
+<li>if 0 is not an eigenvalue of W, then W is invertible, determinant is non zero</li>
+</ul>
+<h1 id="Sources"><a href="#Sources" class="headerlink" title="Sources"></a>Sources</h1><ol>
+<li><p>Noroozizadeh, S., Nagarajan, V., Rosenfeld, E., &amp; Kumar, S. (2025).<br>Deep sequence models tend to memorize geometrically; it is unclear why.<br>arXiv:2510.26745. <a target="_blank" rel="noopener" href="https://arxiv.org/abs/2510.26745">https://arxiv.org/abs/2510.26745</a> </p>
+</li>
+<li><p>Mikolov, T., Chen, K., Corrado, G., &amp; Dean, J. (2013). Efficient Estimation of Word Representations in Vector Space. arXiv:1301.3781. <a target="_blank" rel="noopener" href="https://arxiv.org/abs/1301.3781">https://arxiv.org/abs/1301.3781</a></p>
+</li>
+</ol>
+
+  </div>
+  <div class="post-footer">
+    
+      <ul class="post-tag-list" itemprop="keywords"><li class="post-tag-list-item"><a class="post-tag-list-link" href="/tags/NLP/" rel="tag">NLP</a></li><li class="post-tag-list-item"><a class="post-tag-list-link" href="/tags/Next-Token-Prediction/" rel="tag">Next Token Prediction</a></li><li class="post-tag-list-item"><a class="post-tag-list-link" href="/tags/Pathstar/" rel="tag">Pathstar</a></li><li class="post-tag-list-item"><a class="post-tag-list-link" href="/tags/Sequence-Modelling/" rel="tag">Sequence Modelling</a></li></ul>
+    
+
+    <a href="#top" class="top">Back to Top</a>
+  </div>
+</article>
+<footer>
+  &copy; 2026
+  <span class="author">
+    Sooham Rafiz
+  </span>
+</footer>
+    </div>
+  </body>
+</html>
