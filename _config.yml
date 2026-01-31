@@ -53,8 +53,11 @@ i18n_dir: :lang
 # skip_render:
 # paths that will be copied to public raw, without being rendered
 # you can use glob exprs for path matching i.e mypage/**/*
-skip_render: 
-  - "source/**/*.js" # Javascript files will be copied to public folder
+skip_render:
+  - "visualizations/letter-boxed/**"
+  - "visualizations/token-embeddings/**"
+  - "visualizations/constrained-optimization/**"
+  - "visualizations/manim-videos/**"
 
 # Writing
 new_post_name: :title.md # File name of new posts
