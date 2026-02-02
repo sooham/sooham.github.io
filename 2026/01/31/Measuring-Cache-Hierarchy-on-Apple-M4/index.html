@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html>
+  <!DOCTYPE html>
+<!--<html lang="en">-->
+<head>
+  <!-- Basquiat-inspired bold, street art aesthetic fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Work+Sans:wght@400;500;600;700;800;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+
+  
+  <!-- Google Analytics (GA4) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-WC8766BHKN"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-WC8766BHKN');
+  </script>
+  
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=Edge,chrome=1">
+  
+  <title>Measuring Cache Hierarchy on Apple M4 with Pointer Chasing - Computer Stuff and Other Stuff</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
+  
+  <meta name="keywords" content=Apple Silicon,M4,Cache,Systems Programming,Performance,Memory Hierarchy>
+  
+    <meta name="description" content="An exploration into algorithms.">
+  
+  
+    <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico?v=1.02">
+  
+  
+    <link rel="alternate" href="/atom.xml " title="Computer Stuff and Other Stuff" type="application/atom+xml">
+  
+
+  <script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+    menuSettings: {
+      zoom: "None"
+    },
+    showMathMenu: false,
+    jax: ["input/TeX","output/HTML-CSS"],
+    extensions: ["tex2jax.js"],
+    TeX: {
+      extensions: ["AMSmath.js","AMSsymbols.js","color.js"],
+      equationNumbers: {
+        autoNumber: "AMS"
+      }
+    },
+    "HTML-CSS": {
+      availableFonts: ["TeX"],
+      preferredFont: "TeX",
+      webFont: "TeX",
+      imageFont: null
+    },
+    tex2jax: {
+      inlineMath: [["\\(", "\\)"], ["$", "$"]],
+      displayMath: [["\\[", "\\]"], ["$$", "$$"]],
+      processEscapes: true,
+      processEnvironments: true
+    }
+  });
+</script>
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-MML-AM_CHTML"></script>
+  
+<link rel="stylesheet" href="/css/style.css">
+
+
+  
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+  <body>
+    <div class="container">
+      <header class="header">
+  <div class="blog-title">
+    <a href="/" class="logo">Computer Stuff and Other Stuff</a>
+    <div class="subtitle">By Sooham Rafiz</div>
+  </div>
+  <nav class="navbar">
+    <ul class="menu">
+      <li class="menu-item">
+        <a href="/" class="menu-item-link">About</a>
+      </li>
+      <li class="menu-item">
+        <a href="/archives" class="menu-item-link">Blog</a>
+      </li>
+      <li class="menu-item">
+        <a href="https://github.com/sooham" class="menu-item-link" target="_blank" rel="noopener">GitHub</a>
+      </li>
+      <li class="menu-item">
+        <a href="/visualizations" class="menu-item-link">Visualizations</a>
+      </li>
+    </ul>
+  </nav>
+</header>
+
+<article class="post">
+  <div class="post-title">
+    <h1 class="article-title">Measuring Cache Hierarchy on Apple M4 with Pointer Chasing</h1>
+  </div>
+   <div class="post-meta">
+    <span class="post-time">2026-01-31</span>
+  </div>
+  <div class="post-content">
+    <p>While exploring parallel computing concepts on my own time, I decided to set up an experiment to measure cache latencies on my M4 MacBook. The results revealed some interesting characteristics of Apple Silicon—particularly the 128-byte cache lines and the dramatic latency differences across the memory hierarchy.</p>
+<p>This post walks through the pointer chasing technique I used, the M4-specific findings, and what the numbers mean for writing cache-friendly code.</p>
+<hr>
+<h2 id="Key-Takeaways"><a href="#Key-Takeaways" class="headerlink" title="Key Takeaways"></a>Key Takeaways</h2><p><strong>What you&#39;ll learn:</strong></p>
+<ol>
+<li><strong>What is the cache hierarchy and what benefits does it confer?</strong></li>
+<li><strong>How to measure cache sizes</strong> using pointer chasing—a technique that defeats CPU prefetching</li>
+<li><strong>M4&#39;s actual latency numbers:</strong> L1 (~0.7ns) → L2 (~1.5ns) → Main memory (~6.4ns)</li>
+<li><strong>Why M4&#39;s 128-byte cache lines matter</strong>—double Intel&#39;s 64-byte lines, affects struct padding and false sharing</li>
+<li><strong>Practical working set guidelines:</strong> Keep hot data under 128KB (L1) or 16MB (L2) when possible</li>
+</ol>
+<p align="center">
+  <img src="/2026/01/31/Measuring-Cache-Hierarchy-on-Apple-M4/RAM_hierarchy.jpeg" style="max-width:100%; height:auto;">
+</p>
+
+<p align="center" style="margin-top: 10px; font-style: italic; color: #666;">
+  <strong>M4 Cache Hierarchy:</strong> Performance cores feature 128 KB L1 and access to a shared 16 MB L2, with latencies ranging from ~0.7 ns (L1) to ~6.4 ns (main memory).
+</p>
+
+<hr>
+<h2 id="The-Memory-Hierarchy-in-Practice"><a href="#The-Memory-Hierarchy-in-Practice" class="headerlink" title="The Memory Hierarchy in Practice"></a>The Memory Hierarchy in Practice</h2><p>Why do these numbers matter?</p>
+<p>A 9x latency difference means cache-friendly code can be dramatically faster. Working set size determines which cache level you&#39;re hitting. M4&#39;s architecture differs from Intel in ways that affect optimization.</p>
+<p>Practical implications:</p>
+<ul>
+<li>Hot data structures under 128 KB benefit from L1 speeds</li>
+<li>Working sets under 16 MB stay in L2 territory</li>
+<li>Random access across large arrays incurs the full main memory penalty</li>
+<li>Data layout (struct-of-arrays vs array-of-structs) affects cache utilization</li>
+</ul>
+<hr>
+<h2 id="Why-Naive-Benchmarks-Don-39-t-Work"><a href="#Why-Naive-Benchmarks-Don-39-t-Work" class="headerlink" title="Why Naive Benchmarks Don&#39;t Work"></a>Why Naive Benchmarks Don&#39;t Work</h2><p>The problem with measuring memory latency directly:</p>
+<ul>
+<li>Modern CPUs use hardware prefetching to anticipate access patterns</li>
+<li>Sequential or strided access triggers prefetching, masking true latency</li>
+<li>Need a technique where each access depends on the previous result</li>
+</ul>
+<p>This is where pointer chasing comes in—it creates a data dependency that the prefetcher cannot anticipate.</p>
+<hr>
+<h2 id="How-Pointer-Chasing-Works"><a href="#How-Pointer-Chasing-Works" class="headerlink" title="How Pointer Chasing Works"></a>How Pointer Chasing Works</h2><p>Each memory access depends on the <em>value</em> returned by the previous access. The CPU cannot prefetch because the next address is unknown until the current load completes.</p>
+<p>Think of it like a scavenger hunt where each clue reveals the location of the next clue—you can&#39;t skip ahead.</p>
+<p><strong>Setting up the pointer chain:</strong></p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// Create a circular linked list with cache-line-sized jumps</span></span><br><span class="line"><span class="comment">// Each element stores the address of the next element</span></span><br><span class="line"><span class="type">void</span> <span class="title function_">initialize_pointer_chain</span><span class="params">(<span class="type">uintptr_t</span> *memory, <span class="type">uint64_t</span> num_elements, <span class="type">uint32_t</span> stride_size)</span> &#123;</span><br><span class="line">    <span class="type">uint64_t</span> gcd = greatest_common_divisor(stride_size, num_elements);</span><br><span class="line">    <span class="type">uint64_t</span> chain_length = num_elements / gcd;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// Build separate circular chains</span></span><br><span class="line">    <span class="comment">// e.g., if size is 4 and stride is 2:</span></span><br><span class="line">    <span class="comment">// chain 1: 0 -&gt; 2 -&gt; 0</span></span><br><span class="line">    <span class="comment">// chain 2: 1 -&gt; 3 -&gt; 1</span></span><br><span class="line">    <span class="keyword">for</span> (<span class="type">uint64_t</span> chain_start = <span class="number">0</span>; chain_start &lt; gcd; chain_start++) &#123;</span><br><span class="line">        <span class="type">uint64_t</span> current_idx = chain_start;</span><br><span class="line">        <span class="keyword">for</span> (<span class="type">uint64_t</span> i = <span class="number">0</span>; i &lt; chain_length; i++) &#123;</span><br><span class="line">            <span class="type">uint64_t</span> next_idx = (current_idx + stride_size) % num_elements;</span><br><span class="line">            memory[current_idx] = (<span class="type">uintptr_t</span>)(&amp;memory[next_idx]);</span><br><span class="line">            current_idx = next_idx;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><strong>The traversal loop:</strong></p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// Chase pointers 1 billion times</span></span><br><span class="line"><span class="comment">// Each load depends on the previous—defeats prefetching</span></span><br><span class="line"><span class="keyword">volatile</span> <span class="type">uintptr_t</span> *current = &amp;memory[<span class="number">0</span>];</span><br><span class="line"><span class="keyword">for</span> (<span class="type">uint64_t</span> i = <span class="number">0</span>; i &lt; <span class="number">1000000000ULL</span>; i++) &#123;</span><br><span class="line">    current = (<span class="keyword">volatile</span> <span class="type">uintptr_t</span> *)(*current);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>The <code>volatile</code> keyword prevents the compiler from optimizing away the repeated loads. Without it, the compiler may hoist the load out of the loop or eliminate it entirely, invalidating the benchmark.</p>
+<hr>
+<h2 id="Apple-Silicon-Differences"><a href="#Apple-Silicon-Differences" class="headerlink" title="Apple Silicon Differences"></a>Apple Silicon Differences</h2><p>Key platform constants for M4:</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">ifdef</span> __APPLE__</span></span><br><span class="line">    <span class="meta">#<span class="keyword">define</span> CACHE_LINE_SIZE 128   <span class="comment">// vs 64 bytes on Intel</span></span></span><br><span class="line">    <span class="meta">#<span class="keyword">define</span> L1_CACHE_SIZE (128 * 1024)  <span class="comment">// 128 KB per P-core</span></span></span><br><span class="line">    <span class="meta">#<span class="keyword">define</span> L2_CACHE_SIZE (16 * 1024 * 1024)  <span class="comment">// 16 MB shared</span></span></span><br><span class="line">    <span class="meta">#<span class="keyword">define</span> PAGE_SIZE (16 * 1024)  <span class="comment">// 16 KB vs 4 KB on Linux</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">endif</span></span></span><br></pre></td></tr></table></figure>
+<p><strong>M4 Cache Hierarchy:</strong></p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>Level</th>
+<th>Performance Cores</th>
+<th>Efficiency Cores</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>L1</td>
+<td>128 KB</td>
+<td>64 KB</td>
+</tr>
+<tr>
+<td>L2</td>
+<td>16 MB (shared)</td>
+<td>4 MB (shared)</td>
+</tr>
+<tr>
+<td>L3</td>
+<td>None</td>
+<td>None</td>
+</tr>
+<tr>
+<td>Memory</td>
+<td>Unified</td>
+<td>Unified</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p><strong>Key differences from Intel/AMD:</strong></p>
+<ul>
+<li>128-byte cache lines (double the typical 64 bytes)</li>
+<li>No L3 cache—relies on large L2 and unified memory architecture</li>
+<li>16 KB page size vs 4 KB on most Linux systems</li>
+</ul>
+<p><strong>Practical implications:</strong></p>
+<ul>
+<li>Struct padding for cache alignment needs 128-byte boundaries on M4</li>
+<li>False sharing thresholds differ—threads writing to addresses within 128 bytes may contend</li>
+<li>Memory alignment functions like <code>aligned_alloc</code> should use 128-byte alignment</li>
+</ul>
+<hr>
+<h2 id="Checking-Your-Cache-Configuration"><a href="#Checking-Your-Cache-Configuration" class="headerlink" title="Checking Your Cache Configuration"></a>Checking Your Cache Configuration</h2><p>Before running any benchmarks, you can query your system&#39;s cache parameters directly. On macOS, the <code>sysctl</code> command exposes this information:</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># Cache line size</span></span><br><span class="line">sysctl hw.cachelinesize</span><br><span class="line"><span class="comment"># hw.cachelinesize: 128</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># L1 data cache size</span></span><br><span class="line">sysctl hw.l1dcachesize</span><br><span class="line"><span class="comment"># hw.l1dcachesize: 65536</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># L2 cache size</span></span><br><span class="line">sysctl hw.l2cachesize</span><br><span class="line"><span class="comment"># hw.l2cachesize: 4194304</span></span><br></pre></td></tr></table></figure>
+<p>Note that <code>sysctl</code> reports per-core values and may show efficiency core specs depending on which core handles the query. On my M4, it reports the efficiency core&#39;s 64 KB L1 and 4 MB L2, while the performance cores have 128 KB L1 and access the shared 16 MB L2.</p>
+<p>For a complete view of all cache-related parameters:</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sysctl -a | grep cache</span><br></pre></td></tr></table></figure>
+<p>These values give us targets to validate with our experiments—if the pointer chasing technique works correctly, we should see latency transitions at these boundaries.</p>
+<hr>
+<h2 id="Experiment-1-Measuring-Cache-Sizes"><a href="#Experiment-1-Measuring-Cache-Sizes" class="headerlink" title="Experiment 1: Measuring Cache Sizes"></a>Experiment 1: Measuring Cache Sizes</h2><p><strong>Methodology:</strong></p>
+<ul>
+<li>Buffer sizes from 4 KB to 32 MB (powers of 2)</li>
+<li>Stride of 128 bytes (one cache line per access)</li>
+<li>1 billion pointer traversals per buffer size</li>
+<li>Measure total time, compute per-access latency</li>
+</ul>
+<p><strong>Results:</strong></p>
+<p align="center">
+  <img src="/2026/01/31/Measuring-Cache-Hierarchy-on-Apple-M4/cache_latency_plot.png" style="max-width:100%; height:auto;">
+</p>
+
+<p align="center" style="margin-top: 10px; font-style: italic; color: #666;">
+  <strong>Figure 1:</strong> Access latency vs. buffer size. Clear plateaus reveal cache boundaries at 128 KB (L1) and 16 MB (L2).
+</p>
+
+<p><strong>Analysis:</strong></p>
+<p>The plot shows three distinct regions:</p>
+<ol>
+<li><strong>Flat region (up to ~128 KB):</strong> L1 cache—consistent low latency around 0.7 ns</li>
+<li><strong>Gradual increase (128 KB to 16 MB):</strong> L2 cache—latency rises to ~1.7 ns</li>
+<li><strong>Sharp jump (beyond 16 MB):</strong> Main memory—latency spikes to ~6.4 ns</li>
+</ol>
+<p>The boundaries align with M4&#39;s documented cache sizes: 128 KB L1 (performance cores) and 16 MB L2.</p>
+<p><strong>Takeaway:</strong> Working set size directly determines which latency tier your code operates in. The difference between fitting in L2 vs spilling to main memory is a 4-9x latency penalty.</p>
+<hr>
+<h2 id="Experiment-2-Measuring-Cache-Line-Size"><a href="#Experiment-2-Measuring-Cache-Line-Size" class="headerlink" title="Experiment 2: Measuring Cache Line Size"></a>Experiment 2: Measuring Cache Line Size</h2><p><strong>Methodology:</strong></p>
+<ul>
+<li>Multiple buffer sizes (4 KB to 32 MB)</li>
+<li>Vary stride from 8 bytes to 256 bytes</li>
+<li>Look for latency transition points</li>
+</ul>
+<p><strong>Results:</strong></p>
+<p align="center">
+  <img src="/2026/01/31/Measuring-Cache-Hierarchy-on-Apple-M4/cache_line_plot.png" style="max-width:100%; height:auto;">
+</p>
+
+<p align="center" style="margin-top: 10px; font-style: italic; color: #666;">
+  <strong>Figure 2:</strong> Latency vs. stride for various buffer sizes. The transition at 128 bytes confirms M4's cache line size.
+</p>
+
+<p><strong>Analysis:</strong></p>
+<p>The stride vs. latency plot reveals a consistent pattern across buffer sizes:</p>
+<ul>
+<li>Strides ≤128 bytes: Similar latency (accessing within single cache line or adjacent lines)</li>
+<li>Strides &gt;128 bytes: Latency increases (each access touches a new cache line)</li>
+</ul>
+<p>The transition at 128 bytes confirms M4&#39;s cache line size. For larger buffer sizes (those that exceed L1), the effect is more pronounced because cache misses occur more frequently.</p>
+<hr>
+<h2 id="Practical-Guidelines"><a href="#Practical-Guidelines" class="headerlink" title="Practical Guidelines"></a>Practical Guidelines</h2><p><strong>Working set sizing:</strong></p>
+<ul>
+<li>Under 128 KB: L1 speeds (~0.7 ns/access)</li>
+<li>Under 16 MB: L2 speeds (~1.5 ns/access)</li>
+<li>Over 16 MB: Main memory (~6.4 ns/access)</li>
+</ul>
+<p><strong>Data layout considerations:</strong></p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// Large struct spans multiple cache lines</span></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">LargeRecord</span> &#123;</span> <span class="type">char</span> data[<span class="number">256</span>]; &#125;;  <span class="comment">// 2 cache line fetches</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// Separating hot and cold data</span></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">HotFields</span> &#123;</span> <span class="type">int</span> id; <span class="type">float</span> value; &#125;;  <span class="comment">// Fits in one line</span></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">ColdFields</span> &#123;</span> <span class="type">char</span> metadata[<span class="number">200</span>]; &#125;;  <span class="comment">// Accessed less frequently</span></span><br></pre></td></tr></table></figure>
+<p><strong>False sharing on M4:</strong></p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// On Intel (64-byte lines), 64-byte alignment suffices</span></span><br><span class="line"><span class="comment">// On M4 (128-byte lines), need 128-byte alignment to avoid false sharing</span></span><br><span class="line">__attribute__((aligned(<span class="number">128</span>))) <span class="type">int</span> thread1_counter;</span><br><span class="line">__attribute__((aligned(<span class="number">128</span>))) <span class="type">int</span> thread2_counter;</span><br></pre></td></tr></table></figure>
+<p><strong>Access patterns:</strong></p>
+<ul>
+<li>Sequential/strided access benefits from prefetching</li>
+<li>Random access across large arrays incurs full latency penalties</li>
+</ul>
+<hr>
+<h2 id="Example-Cache-Aware-vs-Cache-Oblivious-Code"><a href="#Example-Cache-Aware-vs-Cache-Oblivious-Code" class="headerlink" title="Example: Cache-Aware vs Cache-Oblivious Code"></a>Example: Cache-Aware vs Cache-Oblivious Code</h2><p>To illustrate the practical impact of cache hierarchy, consider matrix transpose—a common operation with inherently poor cache locality. The naive implementation accesses memory in a pattern that conflicts with how caches work.</p>
+<p><strong>Cache-Oblivious (Naive) Approach:</strong></p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// Reads rows, writes columns—terrible cache behavior</span></span><br><span class="line"><span class="type">void</span> <span class="title function_">transpose_naive</span><span class="params">(<span class="type">double</span> *src, <span class="type">double</span> *dst, <span class="type">int</span> n)</span> &#123;</span><br><span class="line">    <span class="keyword">for</span> (<span class="type">int</span> i = <span class="number">0</span>; i &lt; n; i++) &#123;</span><br><span class="line">        <span class="keyword">for</span> (<span class="type">int</span> j = <span class="number">0</span>; j &lt; n; j++) &#123;</span><br><span class="line">            dst[j * n + i] = src[i * n + j];  <span class="comment">// Column-major write</span></span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><strong>Problem:</strong> The inner loop writes to <code>dst</code> with stride <code>n</code>, jumping across cache lines. For a 1024×1024 matrix of doubles (8 bytes each), each write is 8192 bytes apart—far exceeding M4&#39;s 128-byte cache line. This thrashes the cache.</p>
+<p><strong>Cache-Aware (Blocked) Approach:</strong></p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// Tiled/blocked transpose—exploits cache hierarchy</span></span><br><span class="line"><span class="type">void</span> <span class="title function_">transpose_blocked</span><span class="params">(<span class="type">double</span> *src, <span class="type">double</span> *dst, <span class="type">int</span> n, <span class="type">int</span> block_size)</span> &#123;</span><br><span class="line">    <span class="keyword">for</span> (<span class="type">int</span> i = <span class="number">0</span>; i &lt; n; i += block_size) &#123;</span><br><span class="line">        <span class="keyword">for</span> (<span class="type">int</span> j = <span class="number">0</span>; j &lt; n; j += block_size) &#123;</span><br><span class="line">            <span class="comment">// Transpose one block at a time</span></span><br><span class="line">            <span class="type">int</span> i_max = (i + block_size &lt; n) ? i + block_size : n;</span><br><span class="line">            <span class="type">int</span> j_max = (j + block_size &lt; n) ? j + block_size : n;</span><br><span class="line"></span><br><span class="line">            <span class="keyword">for</span> (<span class="type">int</span> bi = i; bi &lt; i_max; bi++) &#123;</span><br><span class="line">                <span class="keyword">for</span> (<span class="type">int</span> bj = j; bj &lt; j_max; bj++) &#123;</span><br><span class="line">                    dst[bj * n + bi] = src[bi * n + bj];</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><strong>Why blocking helps:</strong></p>
+<ul>
+<li>Processes small tiles (e.g., 64×64) that fit in L1 cache</li>
+<li>Each block is fully transposed before moving to the next</li>
+<li>Reduces cache misses by maximizing reuse of loaded cache lines</li>
+<li>On M4 with 128 KB L1, a 64×64 double matrix (32 KB) fits comfortably</li>
+</ul>
+<p><strong>Choosing block size for M4:</strong></p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// Rule of thumb: block size should fit comfortably in L1</span></span><br><span class="line"><span class="comment">// L1 = 128 KB on M4 performance cores</span></span><br><span class="line"><span class="comment">// For double (8 bytes), block_size * block_size * 8 &lt; 128 KB</span></span><br><span class="line"><span class="comment">// block_size = 64 gives 32 KB per block</span></span><br><span class="line"></span><br><span class="line"><span class="type">int</span> optimal_block = <span class="number">64</span>;  <span class="comment">// For M4&#x27;s 128 KB L1</span></span><br><span class="line">transpose_blocked(src, dst, <span class="number">1024</span>, optimal_block);</span><br></pre></td></tr></table></figure>
+<p><strong>Performance comparison:</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">TODO: Add profiling results comparing naive vs blocked transpose</span><br><span class="line">- Test with 1024×1024 and 4096×4096 matrices</span><br><span class="line">- Measure time and cache miss rates</span><br><span class="line">- Expected: 3-10x speedup for blocked version on large matrices</span><br></pre></td></tr></table></figure>
+<hr>
+<h2 id="Implementation-Notes"><a href="#Implementation-Notes" class="headerlink" title="Implementation Notes"></a>Implementation Notes</h2><p>A few issues encountered during implementation:</p>
+<ul>
+<li><strong>No <code>pthread_barrier_t</code> on macOS:</strong> Had to implement barrier synchronization manually for multi-threaded bandwidth tests</li>
+<li><strong>Compiler optimization:</strong> The <code>volatile</code> keyword is essential; without it, <code>-O3</code> will eliminate the pointer chase loop entirely</li>
+<li><strong>Timer resolution:</strong> 1 billion iterations ensures timing measurements exceed timer granularity and average out system noise</li>
+<li><strong>Memory alignment:</strong> Used <code>aligned_alloc()</code> with 128-byte alignment for consistent results</li>
+</ul>
+<hr>
+<h2 id="Conclusion"><a href="#Conclusion" class="headerlink" title="Conclusion"></a>Conclusion</h2><p>The memory hierarchy has a direct impact on performance. On M4:</p>
+<ul>
+<li>L1 to main memory represents a ~9x latency difference</li>
+<li>128-byte cache lines differ from Intel&#39;s 64-byte lines</li>
+<li>Working set size determines which cache level dominates your access patterns</li>
+</ul>
+<p>The pointer chasing technique provides a way to measure these characteristics empirically, useful for validating assumptions and understanding unfamiliar hardware.</p>
+
+  </div>
+  <div class="post-footer">
+    
+      <ul class="post-tag-list" itemprop="keywords"><li class="post-tag-list-item"><a class="post-tag-list-link" href="/tags/Apple-Silicon/" rel="tag">Apple Silicon</a></li><li class="post-tag-list-item"><a class="post-tag-list-link" href="/tags/Cache/" rel="tag">Cache</a></li><li class="post-tag-list-item"><a class="post-tag-list-link" href="/tags/M4/" rel="tag">M4</a></li><li class="post-tag-list-item"><a class="post-tag-list-link" href="/tags/Memory-Hierarchy/" rel="tag">Memory Hierarchy</a></li><li class="post-tag-list-item"><a class="post-tag-list-link" href="/tags/Performance/" rel="tag">Performance</a></li><li class="post-tag-list-item"><a class="post-tag-list-link" href="/tags/Systems-Programming/" rel="tag">Systems Programming</a></li></ul>
+    
+
+    <a href="#top" class="top">Back to Top</a>
+  </div>
+</article>
+<footer>
+  &copy; 2026
+  <span class="author">
+    Sooham Rafiz
+  </span>
+</footer>
+    </div>
+  </body>
+</html>

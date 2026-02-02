@@ -3,6 +3,11 @@
   <!DOCTYPE html>
 <!--<html lang="en">-->
 <head>
+  <!-- Basquiat-inspired bold, street art aesthetic fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Work+Sans:wght@400;500;600;700;800;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+
   
   <!-- Google Analytics (GA4) -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-WC8766BHKN"></script>
@@ -62,30 +67,349 @@
   
 <link rel="stylesheet" href="/css/style.css">
 
+
+  
+  <!-- Lorenz attractor background for landing page -->
+  <script defer src="/js/lorenz-background.js"></script>
+  
 <meta name="generator" content="Hexo 7.3.0"></head>
 
   <body>
     <div class="container">
-      <div class="home">
-  <div class="info">
-    <a href="/" class="logo">Sooham Rafiz</a>
-    <!--<div class="subtitle">By Sooham Rafiz</div>-->
-    <div class="sns">
+      <!-- Lorenz attractor ethereal network background -->
+<canvas id="lorenz-canvas"></canvas>
+
+<div class="landing handdrawn">
+  <!-- Paper texture background -->
+  <div class="paper-texture"></div>
+
+  <nav class="landing-nav">
+    <a href="/" class="active">About</a>
+    <span class="nav-dot"></span>
+    <a href="/archives">Blog</a>
+    <span class="nav-dot"></span>
+    <a href="https://github.com/sooham" target="_blank" rel="noopener">GitHub</a>
+    <span class="nav-dot"></span>
+    <a href="/visualizations">Visualizations</a>
+  </nav>
+
+  <section class="hero">
+    <div class="hero-portrait">
+      <!-- Basquiat crown above portrait -->
+      <svg class="portrait-crown" viewBox="0 0 60 40" width="55" height="38">
+        <path d="M5 35 L12 8 L20 25 L30 5 L40 25 L48 8 L55 35" stroke="#d4a84b" stroke-width="3.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle cx="12" cy="8" r="4" fill="#d4a84b"/>
+        <circle cx="30" cy="5" r="4" fill="#d4a84b"/>
+        <circle cx="48" cy="8" r="4" fill="#d4a84b"/>
+      </svg>
+      <div class="portrait-frame basquiat-portrait">
+        <img src="/images/author_selfie.jpeg" alt="Sooham Rafiz" class="portrait-image">
+      </div>
+      <!-- Raw paint strokes -->
+      <div class="portrait-stroke stroke-1"></div>
+      <div class="portrait-stroke stroke-2"></div>
+      <div class="portrait-stroke stroke-3"></div>
+      <!-- Scribbled annotation -->
+      <span class="portrait-scribble scribble-right">©</span>
+    </div>
+    <h1 class="hero-name">
+      <span class="name-text">Sooham Rafiz</span>
+      <span class="underline-sketch"></span>
+    </h1>
+    <p class="hero-title">Senior Software Engineer</p>
+    <p class="hero-subtitle">Never escaped vim</p>
+    <p class="hero-intro">
+      I tackle hard problems in Software Engineering, Hardware and Machine Learning.
+      Previously at Amazon, Qualcomm, and Intel.
+      I like to understand how things work at a fundamental level.
+    </p>
+  </section>
+
+  <section class="about-section blog-section">
+    <h2 class="section-heading basquiat-heading">
+      <span class="heading-text">Latest Posts</span>
+      <span class="heading-doodle"></span>
+      <!-- Basquiat crown above heading -->
+      <svg class="heading-crown" viewBox="0 0 60 40" width="45" height="30">
+        <path d="M5 35 L12 8 L20 25 L30 5 L40 25 L48 8 L55 35" stroke="#d4a84b" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle cx="12" cy="8" r="3" fill="#d4a84b"/>
+        <circle cx="30" cy="5" r="3" fill="#d4a84b"/>
+        <circle cx="48" cy="8" r="3" fill="#d4a84b"/>
+      </svg>
+    </h2>
+    <div class="blog-posts-grid">
       
-          <a href="/archives">Blog</a>
+        <a href="/2026/01/31/Measuring-Cache-Hierarchy-on-Apple-M4/" class="blog-post-card basquiat-card-sm" style="--card-delay: 0s">
+          <div class="post-card-layer">
+            <!-- Paint splatter decorations -->
+            <div class="post-splatter splatter-a"></div>
+            <div class="post-splatter splatter-b"></div>
+            <!-- Scribbled tag -->
+            
+              <span class="post-tag-scribble">Apple Silicon</span>
+            
+          </div>
+          <div class="post-card-content">
+            <time class="post-date-badge">Jan 31</time>
+            <h3 class="post-title">Measuring Cache Hierarchy on Apple M4 with Pointer Chasing</h3>
+            <p class="post-excerpt">
+              While exploring parallel computing concepts on my own time, I decided to set up an experiment to...
+            </p>
+            <span class="post-read-more">
+              read more
+              <svg class="arrow-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M5 12h14M12 5l7 7-7 7"/>
+              </svg>
+            </span>
+          </div>
+        </a>
       
-          <a target="_blank" rel="noopener" href="https://github.com/sooham">GitHub</a>
+        <a href="/2025/11/09/practical-memmap-and-sort-on-pathstar/" class="blog-post-card basquiat-card-sm" style="--card-delay: 0.1s">
+          <div class="post-card-layer">
+            <!-- Paint splatter decorations -->
+            <div class="post-splatter splatter-a"></div>
+            <div class="post-splatter splatter-b"></div>
+            <!-- Scribbled tag -->
+            
+              <span class="post-tag-scribble">NLP</span>
+            
+          </div>
+          <div class="post-card-content">
+            <time class="post-date-badge">Nov 09</time>
+            <h3 class="post-title">What next token prediction models can&#39;t do well in-context.</h3>
+            <p class="post-excerpt">
+              High level plan:
+Explain the architecture of next token prediction models i.e transformer based...
+            </p>
+            <span class="post-read-more">
+              read more
+              <svg class="arrow-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M5 12h14M12 5l7 7-7 7"/>
+              </svg>
+            </span>
+          </div>
+        </a>
       
-          <a href="/www.linkedin.com/in/sooham-rafiz">Linkedin</a>
+        <a href="/2025/11/04/Solving-Sudoku-with-Language-Models-how-will-it-fare-against-a-solver/" class="blog-post-card basquiat-card-sm" style="--card-delay: 0.2s">
+          <div class="post-card-layer">
+            <!-- Paint splatter decorations -->
+            <div class="post-splatter splatter-a"></div>
+            <div class="post-splatter splatter-b"></div>
+            <!-- Scribbled tag -->
+            
+          </div>
+          <div class="post-card-content">
+            <time class="post-date-badge">Nov 04</time>
+            <h3 class="post-title">Solving Sudoku with Language Models - how will it fare against a solver?</h3>
+            <p class="post-excerpt">
+              
+            </p>
+            <span class="post-read-more">
+              read more
+              <svg class="arrow-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M5 12h14M12 5l7 7-7 7"/>
+              </svg>
+            </span>
+          </div>
+        </a>
       
     </div>
-    <footer>
-  &copy; 2026
-  <span class="author">
-    Sooham Rafiz
-  </span>
-</footer>
-  </div>
+    <a href="/archives" class="view-all-posts">
+      View All Posts
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M5 12h14M12 5l7 7-7 7"/>
+      </svg>
+    </a>
+  </section>
+
+  <section class="about-section experience-section">
+    <h2 class="section-heading basquiat-heading">
+      <span class="heading-text">Experience</span>
+      <span class="heading-doodle"></span>
+      <!-- Basquiat crown above heading -->
+      <svg class="heading-crown" viewBox="0 0 60 40" width="45" height="30">
+        <path d="M5 35 L12 8 L20 25 L30 5 L40 25 L48 8 L55 35" stroke="#d4a84b" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle cx="12" cy="8" r="3" fill="#d4a84b"/>
+        <circle cx="30" cy="5" r="3" fill="#d4a84b"/>
+        <circle cx="48" cy="8" r="3" fill="#d4a84b"/>
+      </svg>
+    </h2>
+    <div class="timeline basquiat-timeline">
+      <!-- Amazon -->
+      <div class="timeline-item">
+        <div class="timeline-marker basquiat-marker">
+          <svg class="marker-crown" viewBox="0 0 30 20" width="20" height="14">
+            <path d="M2 18 L6 4 L10 12 L15 2 L20 12 L24 4 L28 18" stroke="currentColor" stroke-width="2" fill="none"/>
+          </svg>
+        </div>
+        <div class="timeline-content basquiat-card">
+          <!-- Basquiat collage elements -->
+          <div class="basquiat-layer">
+            <img src="/images/amazon_logo.png" alt="Amazon" class="collage-logo">
+            <!-- Crown -->
+            <svg class="basquiat-crown" viewBox="0 0 60 40" width="50" height="35">
+              <path d="M5 35 L12 8 L20 25 L30 5 L40 25 L48 8 L55 35" stroke="#d4a84b" stroke-width="3" fill="none" stroke-linecap="round"/>
+              <circle cx="12" cy="8" r="4" fill="#d4a84b"/>
+              <circle cx="30" cy="5" r="4" fill="#d4a84b"/>
+              <circle cx="48" cy="8" r="4" fill="#d4a84b"/>
+            </svg>
+            <!-- Scribbled annotations -->
+            <span class="basquiat-scribble scribble-1">SCALE</span>
+            <span class="basquiat-scribble scribble-2">AWS</span>
+            <span class="basquiat-scribble scribble-3">DISTRIBUTED</span>
+            <span class="basquiat-symbol symbol-1">©</span>
+            <span class="basquiat-symbol symbol-2">★</span>
+            <!-- Paint splatters -->
+            <div class="paint-splatter splatter-1"></div>
+            <div class="paint-splatter splatter-2"></div>
+            <!-- Crossed out text -->
+            <span class="crossed-text">MONOLITH</span>
+          </div>
+          <div class="card-info">
+            <div class="company-row">
+              <span class="company">Amazon</span>
+              <span class="period">2021 - 2024</span>
+            </div>
+            <span class="role">Software Development Engineer II</span>
+          </div>
+        </div>
+      </div>
+      <!-- Qualcomm -->
+      <div class="timeline-item">
+        <div class="timeline-marker basquiat-marker">
+          <svg class="marker-crown" viewBox="0 0 30 20" width="20" height="14">
+            <path d="M2 18 L6 4 L10 12 L15 2 L20 12 L24 4 L28 18" stroke="currentColor" stroke-width="2" fill="none"/>
+          </svg>
+        </div>
+        <div class="timeline-content basquiat-card">
+          <div class="basquiat-layer">
+            <img src="/images/qualcomm_logo.png" alt="Qualcomm" class="collage-logo">
+            <svg class="basquiat-crown" viewBox="0 0 60 40" width="50" height="35">
+              <path d="M5 35 L12 8 L20 25 L30 5 L40 25 L48 8 L55 35" stroke="#d4a84b" stroke-width="3" fill="none" stroke-linecap="round"/>
+              <circle cx="12" cy="8" r="4" fill="#d4a84b"/>
+              <circle cx="30" cy="5" r="4" fill="#d4a84b"/>
+              <circle cx="48" cy="8" r="4" fill="#d4a84b"/>
+            </svg>
+            <span class="basquiat-scribble scribble-1">NPU</span>
+            <span class="basquiat-scribble scribble-2">TENSOR</span>
+            <span class="basquiat-scribble scribble-3">SNAPDRAGON</span>
+            <span class="basquiat-symbol symbol-1">©</span>
+            <span class="basquiat-symbol symbol-3">△</span>
+            <div class="paint-splatter splatter-3"></div>
+            <div class="paint-splatter splatter-4"></div>
+            <span class="crossed-text">LATENCY</span>
+          </div>
+          <div class="card-info">
+            <div class="company-row">
+              <span class="company">Qualcomm</span>
+              <span class="period">2019 - 2021</span>
+            </div>
+            <span class="role">ML Hardware Acceleration Engineer</span>
+          </div>
+        </div>
+      </div>
+      <!-- Intel -->
+      <div class="timeline-item">
+        <div class="timeline-marker basquiat-marker">
+          <svg class="marker-crown" viewBox="0 0 30 20" width="20" height="14">
+            <path d="M2 18 L6 4 L10 12 L15 2 L20 12 L24 4 L28 18" stroke="currentColor" stroke-width="2" fill="none"/>
+          </svg>
+        </div>
+        <div class="timeline-content basquiat-card">
+          <div class="basquiat-layer">
+            <img src="/images/intel_logo.png" alt="Intel" class="collage-logo">
+            <svg class="basquiat-crown" viewBox="0 0 60 40" width="50" height="35">
+              <path d="M5 35 L12 8 L20 25 L30 5 L40 25 L48 8 L55 35" stroke="#d4a84b" stroke-width="3" fill="none" stroke-linecap="round"/>
+              <circle cx="12" cy="8" r="4" fill="#d4a84b"/>
+              <circle cx="30" cy="5" r="4" fill="#d4a84b"/>
+              <circle cx="48" cy="8" r="4" fill="#d4a84b"/>
+            </svg>
+            <span class="basquiat-scribble scribble-1">MOVIDIUS</span>
+            <span class="basquiat-scribble scribble-2">VPU</span>
+            <span class="basquiat-scribble scribble-3">NEURAL</span>
+            <span class="basquiat-symbol symbol-1">©</span>
+            <span class="basquiat-symbol symbol-4">◯</span>
+            <div class="paint-splatter splatter-5"></div>
+            <div class="paint-splatter splatter-6"></div>
+            <span class="crossed-text">x86</span>
+          </div>
+          <div class="card-info">
+            <div class="company-row">
+              <span class="company">Intel</span>
+              <span class="period">2017 - 2018</span>
+            </div>
+            <span class="role">ML Hardware Acceleration Intern</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="about-section">
+    <h2 class="section-heading">
+      <span class="heading-text">Education</span>
+      <span class="heading-doodle"></span>
+    </h2>
+    <div class="education-card sketchy-box">
+      <div class="school-logo-wrapper">
+        <img src="/images/uoft_logo.png" alt="University of Toronto" class="school-logo">
+        <div class="basquiat-accent">©</div>
+      </div>
+      <div class="edu-details">
+        <span class="school">University of Toronto</span>
+        <span class="degree">Honours B.Sc. Computer Science</span>
+        <span class="year">2014 - 2019</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="about-section">
+    <h2 class="section-heading">
+      <span class="heading-text">Things I Love</span>
+      <span class="heading-doodle"></span>
+    </h2>
+    <div class="interests-grid">
+      <span class="interest-tag sketchy-tag">Machine Learning</span>
+      <span class="interest-tag sketchy-tag">Diffusion Models</span>
+      <span class="interest-tag sketchy-tag">Algorithms</span>
+      <span class="interest-tag sketchy-tag">Data Structures</span>
+      <span class="interest-tag sketchy-tag">Systems Design</span>
+      <span class="interest-tag sketchy-tag">Puzzles & Games</span>
+    </div>
+  </section>
+
+  <section class="about-section">
+    <h2 class="section-heading">
+      <span class="heading-text">Tools of the Trade</span>
+      <span class="heading-doodle"></span>
+    </h2>
+    <div class="skills-grid">
+      <span class="skill-tag">Python</span>
+      <span class="skill-tag">Java</span>
+      <span class="skill-tag">TypeScript</span>
+      <span class="skill-tag">React</span>
+      <span class="skill-tag">Node.js</span>
+      <span class="skill-tag">C++</span>
+      <span class="skill-tag">PyTorch</span>
+      <span class="skill-tag">AWS</span>
+      <span class="skill-tag">SQL</span>
+      <span class="skill-tag">Ruby</span>
+    </div>
+  </section>
+
+  <footer class="landing-footer">
+    <div class="footer-divider"></div>
+    <div class="footer-links">
+      <a href="https://github.com/sooham" target="_blank" rel="noopener">GitHub</a>
+      <span class="link-dot"></span>
+      <a href="https://www.linkedin.com/in/sooham-rafiz" target="_blank" rel="noopener">LinkedIn</a>
+      <span class="link-dot"></span>
+      <a href="/archives">Blog</a>
+    </div>
+    <div class="copyright">
+      Made with care by Sooham Rafiz &mdash; 2026
+    </div>
+  </footer>
 </div>
 
     </div>
