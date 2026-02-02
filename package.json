@@ -3,12 +3,11 @@
   "version": "1.0.0",
   "private": true,
   "hexo": {
-    "version": "7.3.0"
+    "version": "8.1.1"
   },
   "dependencies": {
     "d3": "^7.9.0",
-    "hexo": "^7.3.0",
-    "hexo-admin": "^2.3.0",
+    "hexo": "^8.1.1",
     "hexo-deployer-git": "^4.0.0",
     "hexo-generator-archive": "2.0.0",
     "hexo-generator-category": "2.0.0",
@@ -25,7 +24,7 @@
     "postinstall": "patch-package"
   },
   "devDependencies": {
-    "npm-check-updates": "^18.3.1",
+    "npm-check-updates": "^19.3.2",
     "patch-package": "^8.0.1"
   }
 }
