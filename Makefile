@@ -44,5 +44,5 @@ watch: clean_cruft install
 	npm run hexo server -- --watch
 
 clean_cruft:
-	rm  .DS_Store
+	rm -f .DS_Store
 
