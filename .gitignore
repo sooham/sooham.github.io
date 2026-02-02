@@ -100,4 +100,8 @@ typings/
 ./source/.playwright-mcp/
 .playwright-mcp/
 
+# LLMs
+.claude/
+.gemini/
+
 # End of https://www.gitignore.io/api/hexo,node,macos
