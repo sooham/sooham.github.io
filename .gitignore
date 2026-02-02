@@ -104,4 +104,7 @@ typings/
 .claude/
 .gemini/
 
+# database
+db.json
+
 # End of https://www.gitignore.io/api/hexo,node,macos
