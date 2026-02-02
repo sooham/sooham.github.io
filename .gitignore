@@ -96,6 +96,8 @@ typings/
 # dotenv environment variables file
 .env
 
-
+# playwright
+./source/.playwright-mcp/
+.playwright-mcp/
 
 # End of https://www.gitignore.io/api/hexo,node,macos
