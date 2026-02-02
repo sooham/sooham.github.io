@@ -1,7 +1,6 @@
-.PHONY: all install clean generate build deploy server watch
+.PHONY: all install clean generate build deploy server watch clean_cruft
 
-# Default target: build for production
-all: build
+all: server
 
 # Install dependencies and theme if needed
 install: 
@@ -16,7 +15,7 @@ install:
 	fi
 
 # Clean generated files
-clean:
+clean: clean_cruft
 	@echo "Cleaning public/ and cache..."
 	npm run hexo clean
 
@@ -35,12 +34,15 @@ deploy: generate
 	npm run hexo deploy
 
 # Start local development server (does not build for production)
-server: install
+server: clean_cruft install
 	@echo "Starting development server..."
 	npm run hexo server
 
 # Start server with file watching (for development)
-watch: install
+watch: clean_cruft install
 	@echo "Starting server with watch mode..."
 	npm run hexo server -- --watch
+
+clean_cruft:
+	rm  .DS_Store
 
