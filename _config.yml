@@ -132,7 +132,7 @@ deploy:
   type: git
   repo: https://github.com/sooham/sooham.github.io
   branch: master
-  message: deploy changes to master {{ now('YYYY-MM-DD') }}
+  message: deploy changes to master {{ now('yyyy-MM-dd') }}
 
 include:
 exculde:
