@@ -69,42 +69,97 @@
 
 
   
-<meta name="generator" content="Hexo 7.3.0"></head>
+<meta name="generator" content="Hexo 8.1.1"></head>
 
   <body>
     <div class="container">
-      <header class="header">
-  <div class="blog-title">
-    <a href="/" class="logo">Computer Stuff and Other Stuff</a>
-    <div class="subtitle">By Sooham Rafiz</div>
+      <header class="header basquiat-header">
+  <div class="header-container">
+    <div class="blog-title">
+      <a href="/" class="logo">
+        <svg class="logo-crown" viewBox="0 0 30 20" width="22" height="15">
+          <path d="M2 18 L6 4 L10 12 L15 2 L20 12 L24 4 L28 18" stroke="#d4a84b" stroke-width="2" fill="none" stroke-linecap="round"/>
+          <circle cx="6" cy="4" r="2" fill="#d4a84b"/>
+          <circle cx="15" cy="2" r="2" fill="#d4a84b"/>
+          <circle cx="24" cy="4" r="2" fill="#d4a84b"/>
+        </svg>
+        <span class="logo-text">Computer Stuff and Other Stuff</span>
+      </a>
+    </div>
+    <nav class="navbar">
+      <ul class="menu">
+        <li class="menu-item">
+          <a href="/" class="menu-item-link">About</a>
+        </li>
+        <li class="menu-item">
+          <a href="/archives" class="menu-item-link">Blog</a>
+        </li>
+        <li class="menu-item">
+          <a href="https://github.com/sooham" class="menu-item-link" target="_blank" rel="noopener">GitHub</a>
+        </li>
+        <li class="menu-item">
+          <a href="/visualizations" class="menu-item-link">Visualizations</a>
+        </li>
+      </ul>
+    </nav>
   </div>
-  <nav class="navbar">
-    <ul class="menu">
-      <li class="menu-item">
-        <a href="/" class="menu-item-link">About</a>
-      </li>
-      <li class="menu-item">
-        <a href="/archives" class="menu-item-link">Blog</a>
-      </li>
-      <li class="menu-item">
-        <a href="https://github.com/sooham" class="menu-item-link" target="_blank" rel="noopener">GitHub</a>
-      </li>
-      <li class="menu-item">
-        <a href="/visualizations" class="menu-item-link">Visualizations</a>
-      </li>
-    </ul>
-  </nav>
+  <!-- Decorative bottom border -->
+  <div class="header-border"></div>
 </header>
 
-<article class="post">
-  <div class="post-title">
-    <h1 class="article-title">What next token prediction models can&#39;t do well in-context.</h1>
-  </div>
-   <div class="post-meta">
-    <span class="post-time">2025-11-09</span>
-  </div>
-  <div class="post-content">
-    <h1 id="High-level-plan"><a href="#High-level-plan" class="headerlink" title="High level plan:"></a>High level plan:</h1><ul>
+
+<article class="post-page basquiat-post">
+  <!-- Paper texture background -->
+  <div class="post-texture"></div>
+
+  <!-- Hero section with title -->
+  <header class="post-hero">
+    <!-- Basquiat crown above title -->
+    <svg class="post-crown" viewBox="0 0 60 40" width="55" height="38">
+      <path d="M5 35 L12 8 L20 25 L30 5 L40 25 L48 8 L55 35" stroke="#d4a84b" stroke-width="3.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+      <circle cx="12" cy="8" r="4" fill="#d4a84b"/>
+      <circle cx="30" cy="5" r="4" fill="#d4a84b"/>
+      <circle cx="48" cy="8" r="4" fill="#d4a84b"/>
+    </svg>
+
+    <h1 class="post-title">What next token prediction models can&#39;t do well in-context.</h1>
+
+    <div class="post-meta">
+      <time class="meta-date">
+        <span class="date-label">Published</span>
+        <span class="date-value">Nov 09, 2025</span>
+      </time>
+      
+        <div class="meta-tags">
+          
+            <a href="/tags/NLP/" class="meta-tag">#NLP</a>
+          
+            <a href="/tags/Sequence-Modelling/" class="meta-tag">#Sequence Modelling</a>
+          
+            <a href="/tags/Next-Token-Prediction/" class="meta-tag">#Next Token Prediction</a>
+          
+            <a href="/tags/Pathstar/" class="meta-tag">#Pathstar</a>
+          
+        </div>
+      
+    </div>
+
+    <!-- Decorative paint strokes -->
+    <div class="hero-paint-stroke stroke-1"></div>
+    <div class="hero-paint-stroke stroke-2"></div>
+    <div class="hero-paint-stroke stroke-3"></div>
+  </header>
+
+  <!-- Main content -->
+  <div class="post-body">
+    <!-- Decorative side annotation -->
+    <aside class="side-annotation">
+      <span class="annotation-symbol">&#9670;</span>
+      <span class="annotation-line"></span>
+    </aside>
+
+    <div class="post-content">
+      <h1 id="High-level-plan"><a href="#High-level-plan" class="headerlink" title="High level plan:"></a>High level plan:</h1><ul>
 <li>Explain the architecture of next token prediction models i.e transformer based models<ul>
 <li>p(x_t | x_{t-1}, x_{t-2}, ... x_{0})</li>
 <li>how do gradients propagate in next token prediction models across time</li>
@@ -146,21 +201,83 @@
 </li>
 </ol>
 
+    </div>
+
+    <!-- Decorative elements -->
+    <div class="content-decoration">
+      <div class="deco-splatter splatter-a"></div>
+      <div class="deco-splatter splatter-b"></div>
+    </div>
   </div>
-  <div class="post-footer">
+
+  <!-- Footer with tags and navigation -->
+  <footer class="post-footer-section">
+    <div class="footer-divider">
+      <span class="divider-line"></span>
+      <svg class="divider-crown" viewBox="0 0 40 28" width="35" height="24">
+        <path d="M4 24 L9 6 L15 17 L20 4 L25 17 L31 6 L36 24" stroke="#d4a84b" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+        <circle cx="9" cy="6" r="2.5" fill="#d4a84b"/>
+        <circle cx="20" cy="4" r="2.5" fill="#d4a84b"/>
+        <circle cx="31" cy="6" r="2.5" fill="#d4a84b"/>
+      </svg>
+      <span class="divider-line"></span>
+    </div>
+
     
-      <ul class="post-tag-list" itemprop="keywords"><li class="post-tag-list-item"><a class="post-tag-list-link" href="/tags/NLP/" rel="tag">NLP</a></li><li class="post-tag-list-item"><a class="post-tag-list-link" href="/tags/Next-Token-Prediction/" rel="tag">Next Token Prediction</a></li><li class="post-tag-list-item"><a class="post-tag-list-link" href="/tags/Pathstar/" rel="tag">Pathstar</a></li><li class="post-tag-list-item"><a class="post-tag-list-link" href="/tags/Sequence-Modelling/" rel="tag">Sequence Modelling</a></li></ul>
+      <div class="footer-tags">
+        <span class="tags-label">Tagged</span>
+        <div class="tags-list">
+          
+            <a href="/tags/NLP/" class="footer-tag">NLP</a>
+          
+            <a href="/tags/Sequence-Modelling/" class="footer-tag">Sequence Modelling</a>
+          
+            <a href="/tags/Next-Token-Prediction/" class="footer-tag">Next Token Prediction</a>
+          
+            <a href="/tags/Pathstar/" class="footer-tag">Pathstar</a>
+          
+        </div>
+      </div>
     
 
-    <a href="#top" class="top">Back to Top</a>
-  </div>
+    <nav class="post-navigation">
+      <a href="/archives" class="nav-link back-link">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <path d="M19 12H5M12 19l-7-7 7-7"/>
+        </svg>
+        <span>All Posts</span>
+      </a>
+      <a href="#top" class="nav-link top-link">
+        <span>Back to Top</span>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <path d="M12 19V5M5 12l7-7 7 7"/>
+        </svg>
+      </a>
+    </nav>
+  </footer>
 </article>
-<footer>
-  &copy; 2026
-  <span class="author">
-    Sooham Rafiz
-  </span>
+
+<footer class="site-footer basquiat-footer">
+  <div class="footer-border"></div>
+  <div class="footer-content">
+    <div class="footer-links">
+      <a href="https://github.com/sooham" target="_blank" rel="noopener">GitHub</a>
+      <span class="link-dot"></span>
+      <a href="https://www.linkedin.com/in/sooham-rafiz" target="_blank" rel="noopener">LinkedIn</a>
+      <span class="link-dot"></span>
+      <a href="/archives">Blog</a>
+    </div>
+    <p class="copyright">
+      Made with care by <span class="author">Sooham Rafiz</span> &mdash; 2026
+    </p>
+    <!-- Small decorative crown -->
+    <svg class="footer-crown" viewBox="0 0 30 20" width="18" height="12">
+      <path d="M2 18 L6 4 L10 12 L15 2 L20 12 L24 4 L28 18" stroke="#d4a84b" stroke-width="2" fill="none" stroke-linecap="round"/>
+    </svg>
+  </div>
 </footer>
+
+
     </div>
   </body>
 </html>
