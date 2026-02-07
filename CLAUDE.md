@@ -235,3 +235,8 @@ Fonts are loaded via Google Fonts in `/themes/polk/layout/_partial/head.ejs`:
 3. **Consistency**: Same elements use same typography
 4. **Impact with Purpose**: Bold typography serves the content
 5. **Basquiat Spirit**: Raw, direct, powerful communication
+
+
+## Code Exploration section
+
+When exploring codebases for new skills or patterns, use direct file reading (Read, Glob) rather than Task agents unless explicitly requested
