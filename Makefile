@@ -38,6 +38,8 @@ server: clean_cruft install
 	@echo "Starting development server..."
 	npm run hexo server
 
+run: server
+
 # Start server with file watching (for development)
 watch: clean_cruft install
 	@echo "Starting server with watch mode..."
