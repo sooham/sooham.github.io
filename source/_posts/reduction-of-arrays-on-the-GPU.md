@@ -1,5 +1,5 @@
 ---
-title: reduction of arrays on the GPU - from good to bad 
+title: reduction of arrays on the GPU - from good implementations to optimal implementations
 mathjax: true
 comments: true
 date: 2026-04-21 15:10:47
